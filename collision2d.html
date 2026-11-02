@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二維碰撞</title>
+<style>
+/* 動畫共用樣式：16:9 舞台＋控制面板。全螢幕（寬）時面板在右，半螢幕（窄）時面板在下。 */
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1;
+  --surface: #fcfcfb;
+  --surface-2: #efeee9;
+  --ink: #1a1a19;
+  --ink-2: #55544f;
+  --muted: #8c8a83;
+  --line: rgba(11, 11, 11, 0.12);
+  --accent: #2563c9;
+  --accent-ink: #ffffff;
+  --warn: #c2410c;
+  --ok: #15803d;
+  --ans: #7c3aed;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e0e0d;
+    --surface: #1a1a19;
+    --surface-2: #242422;
+    --ink: #f2f1ec;
+    --ink-2: #c3c2b7;
+    --muted: #8c8a83;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #5b9cf5;
+    --accent-ink: #0e0e0d;
+    --warn: #fb923c;
+    --ok: #4ade80;
+    --ans: #b48cff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e0d;
+  --surface: #1a1a19;
+  --surface-2: #242422;
+  --ink: #f2f1ec;
+  --ink-2: #c3c2b7;
+  --muted: #8c8a83;
+  --line: rgba(255, 255, 255, 0.12);
+  --accent: #5b9cf5;
+  --accent-ink: #0e0e0d;
+  --warn: #fb923c;
+  --ok: #4ade80;
+  --ans: #b48cff;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+button, select, input { font: inherit; color: inherit; }
+
+/* ---------- 版面 ---------- */
+.app {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "bar bar"
+    "stage panel"
+    "trans panel";
+}
+.bar { grid-area: bar; }
+.stage { grid-area: stage; }
+.trans { grid-area: trans; }
+.panel { grid-area: panel; }
+
+/* ---------- 上方工具列 ---------- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.bar .title {
+  font-weight: 650;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 140px;
+}
+.bar .title small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.bar select { max-width: 220px; }
+
+.btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.icon { min-width: 40px; padding: 6px 8px; }
+select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface-2); padding: 6px 10px; min-height: 34px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button.ans[aria-pressed="true"] { background: var(--ans); color: #fff; }
+
+/* ---------- 舞台 ---------- */
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  overflow: hidden;
+}
+.stage canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--line);
+  touch-action: none;
+}
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.show { opacity: 0.94; }
+
+/* ---------- 播放列 ---------- */
+.trans {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.trans .time { font-variant-numeric: tabular-nums; min-width: 92px; color: var(--ink-2); }
+.scrub { position: relative; flex: 1 1 200px; min-width: 160px; display: flex; align-items: center; height: 36px; }
+.scrub input { width: 100%; margin: 0; accent-color: var(--accent); }
+.scrub .tick {
+  position: absolute;
+  top: 2px;
+  width: 2px;
+  height: 8px;
+  background: var(--warn);
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+.trans label.chk { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); white-space: nowrap; }
+
+/* ---------- 控制面板 ---------- */
+.panel {
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  overflow: auto;
+  min-height: 0;
+}
+.panel-inner { display: grid; grid-template-columns: 1fr; gap: 4px 16px; padding: 10px 14px 18px; }
+.sec h3 {
+  margin: 10px 0 6px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.preset-note { color: var(--ink-2); font-size: 13px; margin: 2px 0 4px; }
+.preset-note .ref { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+
+.param { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 8px; margin: 4px 0 8px; }
+.param .lab { font-size: 13px; color: var(--ink-2); }
+.param .val { font-variant-numeric: tabular-nums; font-size: 13px; }
+.param input[type="number"] {
+  width: 76px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  text-align: right;
+}
+.param input[type="range"] { grid-column: 1 / -1; width: 100%; margin: 2px 0 0; accent-color: var(--accent); height: 24px; }
+.param select { grid-column: 1 / -1; width: 100%; margin-top: 2px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.toggles label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink-2); min-height: 28px; cursor: pointer; }
+.toggles input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+table.ro { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+table.ro th, table.ro td { padding: 4px 4px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
+table.ro th:first-child, table.ro td:first-child { text-align: left; color: var(--ink-2); }
+table.ro thead th { color: var(--muted); font-weight: 600; font-size: 12px; }
+table.ro td.hide { color: var(--ans); }
+.notes { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.notes li { padding: 6px 8px; border-radius: 6px; background: var(--surface-2); margin-bottom: 6px; }
+.notes li.warn { color: var(--warn); }
+.notes li.ok { color: var(--ok); }
+.notes li.hide { color: var(--ans); }
+
+details.keys { font-size: 12px; color: var(--muted); margin-top: 10px; }
+details.keys kbd {
+  font: 11px ui-monospace, Consolas, monospace;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--surface-2);
+}
+details.keys ul { margin: 6px 0 0; padding-left: 18px; }
+
+/* 半螢幕（左 GoodNotes、右模擬）或手機：直向堆疊 */
+@media (max-aspect-ratio: 5/4), (max-width: 760px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "bar" "stage" "trans" "panel";
+  }
+  .stage { aspect-ratio: 16 / 9; max-height: 60vh; max-height: 60dvh; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  .panel-inner { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+}
+
+/* 收起參數面板：只留工具列、動畫、播放列（要放在最後，蓋過上面的版面） */
+.app.collapsed {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "bar" "stage" "trans";
+}
+.app.collapsed .panel { display: none; }
+.app.collapsed .stage { aspect-ratio: auto; max-height: none; }
+@media (max-aspect-ratio: 5/4), (max-width: 760px) {
+  /* 半螢幕收起時：動畫靠上、播放列緊接在下面，下方留白給視線休息 */
+  .app.collapsed { grid-template-rows: auto auto auto 1fr; grid-template-areas: "bar" "stage" "trans" "."; }
+  .app.collapsed .stage { aspect-ratio: 16 / 9; }
+}
+</style>
+<!--
+  sim-meta：給 build_sim_index.py 讀的題組清單，也是頁面「題組」選單的唯一來源。
+  id 要全資料夾唯一、只用英數字與連字號（跳板頁檔名用它）；改了要重跑索引。
+  refs 只寫題本題號（例 "Ch4 Q2"），索引會把它接到 題庫索引/Ch*.md 的同一題。
+  這個資料夾是學科內容，不寫學生名。
+-->
+<script type="application/json" id="sim-meta">
+{
+  "id": "collision2d",
+  "title": "二維碰撞",
+  "unit": "Ch4 動量與碰撞・二維",
+  "topics": ["二維碰撞", "動量守恆", "動能"],
+  "presets": [
+    {
+      "id": "ex6",
+      "label": "骨幹例題 6",
+      "note": "2.0 kg 往東 3.0 m/s 撞上 3.0 kg 往北 2.0 m/s，黏在一起。碰後速度與方向？動能損失幾成？",
+      "refs": ["Ch4 Q2"],
+      "params": { "mA": 2, "vA": 3, "aA": 0, "mB": 3, "vB": 2, "aB": 90, "type": "stick" }
+    },
+    {
+      "id": "ex7",
+      "label": "骨幹例題 7",
+      "note": "0.20 kg 往東 4.0 m/s 撞靜止的 0.30 kg，碰後 A 往北 1.0 m/s。B 的速度？是彈性碰撞嗎？",
+      "refs": [],
+      "params": { "mA": 0.2, "vA": 4, "aA": 0, "mB": 0.3, "vB": 0, "aB": 0, "type": "given", "vA2": 1, "aA2": 90 }
+    },
+    {
+      "id": "ex7x",
+      "label": "例題 7 延伸：A 往北 2.0",
+      "note": "同例題 7，但碰後 A 往北 2.0 m/s。動量照樣守恆，算算看動能。",
+      "refs": [],
+      "params": { "mA": 0.2, "vA": 4, "aA": 0, "mB": 0.3, "vB": 0, "aB": 0, "type": "given", "vA2": 2, "aA2": 90 }
+    },
+    {
+      "id": "ex8",
+      "label": "骨幹例題 8",
+      "note": "等質量、一顆靜止、彈性斜碰。碰後兩顆速度的夾角？",
+      "refs": ["Ch4 Q56"],
+      "params": { "mA": 1, "vA": 4, "aA": 0, "mB": 1, "vB": 0, "aB": 0, "type": "e", "e": 1, "b": 0.5 }
+    },
+    {
+      "id": "headon",
+      "label": "正面彈性（等質量）",
+      "note": "偏心距 0、e = 1、等質量：A 停下、B 帶走全部速度。把偏心距拉開，看它怎麼變成 90°。",
+      "refs": [],
+      "params": { "mA": 1, "vA": 4, "aA": 0, "mB": 1, "vB": 0, "aB": 0, "type": "e", "e": 1, "b": 0 }
+    },
+    {
+      "id": "free",
+      "label": "一般斜碰（e = 0.6）",
+      "note": "質量不同、兩顆都在動、部分彈性。質心照樣等速直線前進。",
+      "refs": [],
+      "params": { "mA": 1, "vA": 3, "aA": 0, "mB": 2, "vB": 1.5, "aB": 120, "type": "e", "e": 0.6, "b": 0.4 }
+    },
+    {
+      "id": "frq2",
+      "label": "綜合 FRQ 2：從滑痕倒推",
+      "note": "粗糙地板 μk = 0.25：4.0 kg 往東、2.0 kg 往北，撞上黏在一起，滑 1.18 m 停下。由滑痕倒推碰撞前的速度。",
+      "refs": [],
+      "params": { "mA": 4, "vA": 3, "aA": 0, "mB": 2, "vB": 4, "aB": 90, "type": "stick", "mu": 0.25 }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<script>
+/*
+ * 動畫共用引擎 Sim
+ * =================
+ * 一個題型 = 一個 HTML：放一段 <script type="application/json" id="sim-meta">（標題、預設題組，給索引腳本讀）
+ * 加上 Sim.run({ params, toggles, compute, draw, readouts })。引擎負責：
+ *   - 版面：16:9 舞台；全螢幕時控制面板在右、半螢幕時在下
+ *   - 播放：播放／暫停、逐格、拖時間軸、事件（碰撞、爆炸）自動停格
+ *   - 截圖：1920×1080 白底 PNG → 剪貼簿（失敗就下載）
+ *   - 題目／解答模式：解答模式才顯示「答案」數值
+ *   - 網址 #p=預設題組id 直接開到那一題
+ *
+ * 場景函式只處理物理：
+ *   compute(p)            → model：{ duration, events:[{t,label}], bounds:{x0,x1,y0,y1}, ... }
+ *   draw(g, model, t, c)  → 用 g 畫（世界座標，y 向上）；c = { reveal, on, p }
+ *   readouts(model, t, c) → { head:[...], rows:[[label, cell, ...]], notes:[{text, kind, ans}] }
+ *                           cell 可以是字串或 { v, ans:true }（題目模式顯示成「？」）
+ */
+(function (global) {
+  'use strict';
+
+  // ---------- 小工具 ----------
+  const V = {
+    add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
+    sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y }),
+    mul: (a, k) => ({ x: a.x * k, y: a.y * k }),
+    dot: (a, b) => a.x * b.x + a.y * b.y,
+    len: (a) => Math.hypot(a.x, a.y),
+    pol: (r, deg) => ({ x: r * Math.cos(deg * Math.PI / 180), y: r * Math.sin(deg * Math.PI / 180) }),
+    rot: (a, rad) => ({ x: a.x * Math.cos(rad) - a.y * Math.sin(rad), y: a.x * Math.sin(rad) + a.y * Math.cos(rad) }),
+    ang: (a) => Math.atan2(a.y, a.x) * 180 / Math.PI,
+  };
+
+  function fmt(x, d = 2) {
+    if (!isFinite(x)) return '—';
+    const s = x.toFixed(d);
+    return /^-0(\.0+)?$/.test(s) ? s.slice(1) : s;
+  }
+  function vecStr(v, d = 2) { return '(' + fmt(v.x, d) + ', ' + fmt(v.y, d) + ')'; }
+
+  // 方向：東＝+x、北＝+y，寫成「東偏北 45°」
+  function dirWord(v) {
+    if (V.len(v) < 1e-9) return '靜止';
+    let a = V.ang(v);
+    const near = (t) => Math.abs(((a - t + 540) % 360) - 180) < 0.05;
+    if (near(0)) return '正東';
+    if (near(90)) return '正北';
+    if (near(180)) return '正西';
+    if (near(-90)) return '正南';
+    const ew = Math.abs(a) < 90 ? '東' : '西';
+    const ns = a > 0 ? '北' : '南';
+    const off = Math.abs(a) < 90 ? Math.abs(a) : 180 - Math.abs(a);
+    return ew + '偏' + ns + ' ' + fmt(off, 1) + '°';
+  }
+
+  function niceStep(span, target) {
+    const raw = span / target;
+    const p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const m = raw / p;
+    return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
+  }
+
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k]);
+    }
+    for (const c of kids) if (c != null) n.append(c);
+    return n;
+  };
+
+  // ---------- 配色：舞台用（跟主題），截圖一律用 light ----------
+  const PAL = {
+    light: {
+      bg: '#ffffff', grid: '#efeee9', grid2: '#dcdad1', ink: '#1a1a19', ink2: '#55544f', muted: '#8c8a83',
+      a: '#2563c9', b: '#d9531e', c: '#178a4c', cm: '#7c3aed', ghost: 'rgba(26,26,25,0.32)',
+      ground: '#9a978c', warn: '#c2410c', ans: '#7c3aed', panel: '#fafaf8', panelLine: 'rgba(0,0,0,0.12)',
+    },
+    dark: {
+      bg: '#161615', grid: '#232321', grid2: '#34342f', ink: '#f2f1ec', ink2: '#c3c2b7', muted: '#8c8a83',
+      a: '#5b9cf5', b: '#f08050', c: '#3fbf78', cm: '#b48cff', ghost: 'rgba(242,241,236,0.34)',
+      ground: '#6d6b63', warn: '#fb923c', ans: '#b48cff', panel: '#1d1d1b', panelLine: 'rgba(255,255,255,0.14)',
+    },
+  };
+
+  // ---------- 繪圖輔助：世界座標（公尺，y 向上）→ 畫布 ----------
+  // u = 尺寸單位：以 960×540 為基準，截圖 1920×1080 時 u=2，線寬字級等比例放大
+  function makeG(ctx, W, H, pal, bounds, area) {
+    const u = W / 960;
+    const A = area || { x: 0, y: 0, w: W, h: H };
+    const pad = 30 * u;
+    const bw = Math.max(bounds.x1 - bounds.x0, 1e-6), bh = Math.max(bounds.y1 - bounds.y0, 1e-6);
+    const s = Math.min((A.w - 2 * pad) / bw, (A.h - 2 * pad - 14 * u) / bh);
+    const cx = (bounds.x0 + bounds.x1) / 2, cy = (bounds.y0 + bounds.y1) / 2;
+    const ox = A.x + A.w / 2;
+    // anchor: 'bottom' → 多出來的高度放上面（地面貼底，像拋體）
+    const oy = bounds.anchor === 'bottom' ? A.y + A.h - pad - (bh / 2) * s : A.y + A.h / 2 + 7 * u;
+    const X = (x) => ox + (x - cx) * s;
+    const Y = (y) => oy - (y - cy) * s;
+    const font = (px, w) => (w || 500) + ' ' + px * u + 'px system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif';
+
+    function stroke(o) {
+      ctx.strokeStyle = o.color || pal.ink;
+      ctx.lineWidth = (o.width || 2) * u;
+      ctx.setLineDash(o.dash ? o.dash.map((d) => d * u) : []);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 畫布座標的箭頭（給 inset 用）
+    function arrowPx(x0, y0, x1, y1, o = {}) {
+      const L = Math.hypot(x1 - x0, y1 - y0);
+      if (L < 0.5 * u) return;
+      const hw = (o.head || 9) * u * Math.min(1, L / (14 * u));
+      const a = Math.atan2(y1 - y0, x1 - x0);
+      const bx = x1 - hw * Math.cos(a), by = y1 - hw * Math.sin(a);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(bx, by);
+      stroke({ color: o.color, width: o.width || 2.4, dash: o.dash });
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(bx + hw * 0.5 * Math.sin(a), by - hw * 0.5 * Math.cos(a));
+      ctx.lineTo(bx - hw * 0.5 * Math.sin(a), by + hw * 0.5 * Math.cos(a));
+      ctx.closePath();
+      ctx.fillStyle = o.color || pal.ink;
+      ctx.fill();
+    }
+
+    function textPx(x, y, str, o = {}) {
+      ctx.font = font(o.size || 13, o.weight);
+      ctx.textAlign = o.align || 'left';
+      ctx.textBaseline = o.base || 'middle';
+      if (o.clamp) {
+        // 不讓字跑出世界區（跑進右邊向量圖或畫布外）
+        const w = ctx.measureText(str).width, m = 6 * u;
+        const left = ctx.textAlign === 'center' ? x - w / 2 : ctx.textAlign === 'right' ? x - w : x;
+        const shift = Math.min(0, A.x + A.w - m - (left + w)) || Math.max(0, A.x + m - left);
+        x += shift;
+        y = Math.max(A.y + 10 * u, Math.min(A.y + A.h - 10 * u, y));
+      }
+      if (o.halo !== false) {
+        ctx.lineWidth = 4 * u;
+        ctx.strokeStyle = o.haloColor || pal.bg;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(str, x, y);
+      }
+      ctx.fillStyle = o.color || pal.ink;
+      ctx.fillText(str, x, y);
+    }
+
+    const g = {
+      ctx, W, H, u, s, pal, area: A, X, Y, V, fmt,
+      // 世界座標
+      line(x0, y0, x1, y1, o = {}) { ctx.beginPath(); ctx.moveTo(X(x0), Y(y0)); ctx.lineTo(X(x1), Y(y1)); stroke(o); },
+      path(pts, o = {}) {
+        if (pts.length < 2) return;
+        ctx.beginPath(); ctx.moveTo(X(pts[0].x), Y(pts[0].y));
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(X(pts[i].x), Y(pts[i].y));
+        stroke(o);
+      },
+      // r 是世界單位；rPx 給了就用畫布像素（×u）
+      circle(x, y, r, o = {}) {
+        const R = o.rPx != null ? o.rPx * u : r * s;
+        ctx.beginPath(); ctx.arc(X(x), Y(y), R, 0, Math.PI * 2);
+        if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
+        if (o.color || !o.fill) stroke(o);
+      },
+      arrow(x, y, dx, dy, o = {}) {
+        arrowPx(X(x), Y(y), X(x + dx), Y(y + dy), o);
+        if (o.label) {
+          const L = Math.hypot(dx, dy) * s;
+          const ux = L > 1e-6 ? dx * s / L : 1, uy = L > 1e-6 ? -dy * s / L : 0;
+          textPx(X(x + dx) + ux * 8 * u + (o.lx || 0) * u, Y(y + dy) + uy * 8 * u + (o.ly || 0) * u, o.label,
+            { color: o.color, size: o.size || 13, weight: 600, align: ux < -0.3 ? 'right' : ux > 0.3 ? 'left' : 'center', clamp: true });
+        }
+      },
+      text(x, y, str, o = {}) { textPx(X(x) + (o.dx || 0) * u, Y(y) + (o.dy || 0) * u, str, { clamp: true, ...o }); },
+      cmMark(x, y, o = {}) {
+        const R = 7 * u, px = X(x), py = Y(y);
+        ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI * 2);
+        ctx.fillStyle = o.hollow ? 'transparent' : pal.bg; if (!o.hollow) ctx.fill();
+        stroke({ color: o.color || pal.cm, width: 2, dash: o.hollow ? [3, 3] : null });
+        if (!o.hollow) {
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.arc(px, py, R, -Math.PI / 2, 0); ctx.lineTo(px, py);
+          ctx.moveTo(px, py); ctx.arc(px, py, R, Math.PI / 2, Math.PI); ctx.lineTo(px, py);
+          ctx.fillStyle = o.color || pal.cm; ctx.fill();
+        }
+        if (o.label) textPx(px + 11 * u, py - 11 * u, o.label, { color: o.color || pal.cm, size: 12, weight: 600 });
+      },
+      burst(x, y, o = {}) {
+        const px = X(x), py = Y(y), n = 10, R1 = (o.r || 13) * u, R0 = R1 * 0.45;
+        ctx.beginPath();
+        for (let i = 0; i <= 2 * n; i++) {
+          const r = i % 2 ? R0 : R1, a = (i / (2 * n)) * Math.PI * 2;
+          i ? ctx.lineTo(px + r * Math.cos(a), py + r * Math.sin(a)) : ctx.moveTo(px + r, py);
+        }
+        ctx.fillStyle = o.color || '#f59e0b'; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+      },
+      // 世界格線＋刻度（axis: 'x' 只畫地面刻度；'xy' 兩軸）
+      grid(o = {}) {
+        const step = o.step || niceStep(Math.max(bw, bh * 16 / 9), 12);
+        const wx0 = cx + (A.x - ox) / s, wx1 = cx + (A.x + A.w - ox) / s;
+        const wy0 = cy - (A.y + A.h - oy) / s, wy1 = cy - (A.y - oy) / s;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(A.x, A.y, A.w, A.h); ctx.clip();
+        for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) {
+          ctx.beginPath(); ctx.moveTo(X(x), Y(o.yMin != null ? o.yMin : wy0)); ctx.lineTo(X(x), Y(wy1));
+          stroke({ color: Math.abs(x) < 1e-9 ? pal.grid2 : pal.grid, width: 1 });
+        }
+        for (let y = Math.ceil((o.yMin != null ? o.yMin : wy0) / step) * step; y <= wy1; y += step) {
+          ctx.beginPath(); ctx.moveTo(X(wx0), Y(y)); ctx.lineTo(X(wx1), Y(y));
+          stroke({ color: Math.abs(y) < 1e-9 ? pal.grid2 : pal.grid, width: 1 });
+        }
+        ctx.restore();
+        return step;
+      },
+      // 右側面板：動量（或速度）向量圖。groups 共用同一個比例尺，總和箭頭長度可以直接比
+      vectorPanel(groups, o = {}) {
+        const R = o.rect;
+        if (!R) return;
+        ctx.fillStyle = pal.panel; ctx.fillRect(R.x, R.y, R.w, R.h);
+        ctx.beginPath(); ctx.moveTo(R.x + 0.5, R.y); ctx.lineTo(R.x + 0.5, R.y + R.h);
+        stroke({ color: pal.panelLine, width: 1 });
+        if (o.title) textPx(R.x + 14 * u, R.y + 20 * u, o.title, { size: 13, weight: 650, color: pal.ink2, halo: false });
+        const top = R.y + 34 * u, gh = (R.h - 40 * u) / groups.length;
+        // 零向量不畫（例如爆炸後速度 0 的那塊）
+        groups = groups.map((gr) => ({ ...gr, chain: gr.chain.filter((v) => Math.hypot(v.x, v.y) > 1e-9) }));
+        // 共同比例尺
+        let span = 1e-9;
+        const chains = groups.map((gr) => {
+          let p = { x: 0, y: 0 }; const pts = [p];
+          for (const v of gr.chain) { p = V.add(p, v); pts.push(p); }
+          const xs = pts.map((q) => q.x), ys = pts.map((q) => q.y);
+          const bx = Math.max(...xs) - Math.min(...xs), by = Math.max(...ys) - Math.min(...ys);
+          span = Math.max(span, bx / (R.w - 40 * u), by / (gh - 56 * u));
+          return { pts, minx: Math.min(...xs), maxx: Math.max(...xs), miny: Math.min(...ys), maxy: Math.max(...ys) };
+        });
+        const k = 1 / span;
+        groups.forEach((gr, i) => {
+          const gy = top + i * gh, ch = chains[i];
+          textPx(R.x + 14 * u, gy + 10 * u, gr.title, { size: 12, weight: 600, color: pal.muted, halo: false });
+          if (i) { ctx.beginPath(); ctx.moveTo(R.x + 12 * u, gy - 4 * u); ctx.lineTo(R.x + R.w - 12 * u, gy - 4 * u); stroke({ color: pal.panelLine, width: 1 }); }
+          const ccx = R.x + R.w / 2, ccy = gy + 22 * u + (gh - 36 * u) / 2;
+          const ox2 = ccx - ((ch.minx + ch.maxx) / 2) * k, oy2 = ccy + ((ch.miny + ch.maxy) / 2) * k;
+          const P = (q) => ({ x: ox2 + q.x * k, y: oy2 - q.y * k });
+          if (gr.hidden || !gr.chain.length) {
+            textPx(ccx, ccy, gr.hidden ? gr.hiddenText || '？' : 'Σp = 0', { size: 18, weight: 700, color: pal.muted, align: 'center', halo: false });
+            return;
+          }
+          const o0 = P({ x: 0, y: 0 }), end = P(ch.pts[ch.pts.length - 1]);
+          // 鏈的重心在總和箭頭哪一側 → 總和標籤放另一側
+          const tl = Math.hypot(end.x - o0.x, end.y - o0.y) || 1;
+          const tnx = -(end.y - o0.y) / tl, tny = (end.x - o0.x) / tl;
+          const mid = ch.pts.slice(1, -1).map(P);
+          const sideSum = mid.reduce((s2, q) => s2 + (q.x - o0.x) * tnx + (q.y - o0.y) * tny, 0);
+          const tside = sideSum > 0 ? -1 : 1;
+          if (gr.chain.length > 1 && gr.total !== false) {
+            arrowPx(o0.x, o0.y, end.x, end.y, { color: pal.ink, width: 2, dash: [5, 4] });
+          }
+          gr.chain.forEach((v, j) => {
+            const a = P(ch.pts[j]), b = P(ch.pts[j + 1]);
+            arrowPx(a.x, a.y, b.x, b.y, { color: v.color, width: 3 });
+            if (v.label) {
+              const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+              const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+              const nx = -(b.y - a.y) / L, ny = (b.x - a.x) / L;
+              // 標籤放在離總和箭頭遠的那一側
+              const side = gr.chain.length > 1 ? -tside * Math.sign(nx * tnx + ny * tny || 1) : 1;
+              textPx(mx + nx * 14 * u * side, my + ny * 14 * u * side, v.label, { color: v.color, size: 12, weight: 650, align: 'center' });
+            }
+          });
+          if (gr.totalLabel && gr.chain.length > 1 && gr.total !== false) {
+            textPx((o0.x + end.x) / 2 + tnx * 14 * u * tside, (o0.y + end.y) / 2 + tny * 14 * u * tside, gr.totalLabel, { color: pal.ink, size: 12, weight: 650, align: 'center' });
+          }
+          ctx.beginPath(); ctx.arc(o0.x, o0.y, 2.5 * u, 0, Math.PI * 2); ctx.fillStyle = pal.ink; ctx.fill();
+        });
+      },
+      textPx, arrowPx,
+    };
+    return g;
+  }
+
+  // ---------- 主程式 ----------
+  function run(def) {
+    const meta = JSON.parse(document.getElementById('sim-meta').textContent);
+    const presets = meta.presets || [];
+    const params = def.params || [];
+    const toggles = def.toggles || [];
+
+    const st = { p: {}, on: {}, t: 0, playing: false, speed: 1, reveal: false, pauseAtEvent: true, preset: null, model: null };
+    params.forEach((q) => (st.p[q.key] = q.value));
+    toggles.forEach((q) => (st.on[q.key] = q.value));
+
+    // ----- DOM -----
+    const presetSel = el('select', { 'aria-label': '題組', onchange: () => applyPreset(presetSel.value) },
+      ...presets.map((pr) => el('option', { value: pr.id, text: pr.label })), el('option', { value: '', text: '（自訂）' }));
+    const btnQ = el('button', { 'aria-pressed': 'true', text: '題目', title: '題目模式：答案數值顯示成「？」（A）', onclick: () => setReveal(false) });
+    const btnA = el('button', { class: 'ans', 'aria-pressed': 'false', text: '解答', title: '解答模式：顯示答案數值（A）', onclick: () => setReveal(true) });
+    const btnShot = el('button', { class: 'btn primary', text: '📋 截圖', title: '1920×1080 白底 PNG 複製到剪貼簿（C）', onclick: () => shot() });
+    const btnTheme = el('button', { class: 'btn icon', text: '🌓', title: '切換深色／淺色', onclick: () => cycleTheme() });
+    const btnPanel = el('button', { class: 'btn', 'aria-pressed': 'false', title: '收起／展開參數面板（P）', onclick: () => setPanel(!app.classList.contains('collapsed')) });
+    const bar = el('header', { class: 'bar' },
+      el('div', { class: 'title' }, meta.title || document.title, meta.unit ? el('small', { text: meta.unit }) : null),
+      presetSel, el('span', { class: 'seg' }, btnQ, btnA), btnShot, btnPanel, btnTheme);
+
+    const canvas = el('canvas', { role: 'img', 'aria-label': meta.title || '' });
+    const toast = el('div', { class: 'toast', role: 'status' });
+    const stage = el('main', { class: 'stage' }, canvas, toast);
+
+    const btnPlay = el('button', { class: 'btn icon', text: '▶', title: '播放／暫停（空白鍵）', onclick: () => togglePlay() });
+    const btnReset = el('button', { class: 'btn icon', text: '⏮', title: '回到開始（Home）', onclick: () => { pause(); setT(0); } });
+    const btnBack = el('button', { class: 'btn icon', text: '◀', title: '倒退一格（←）', onclick: () => { pause(); stepT(-1); } });
+    const btnFwd = el('button', { class: 'btn icon', text: '▶|', title: '前進一格（→）', onclick: () => { pause(); stepT(1); } });
+    const btnEvt = el('button', { class: 'btn', text: '⤓ 事件', title: '跳到下一個事件（E）', onclick: () => { pause(); jumpEvent(); } });
+    const scrubIn = el('input', { type: 'range', min: 0, max: 1000, step: 1, value: 0, 'aria-label': '時間',
+      oninput: () => { pause(); setT((scrubIn.value / 1000) * st.model.duration); } });
+    const scrub = el('div', { class: 'scrub' }, scrubIn);
+    const timeLab = el('span', { class: 'time' });
+    const speedSel = el('select', { 'aria-label': '速度', title: '播放速度', onchange: () => (st.speed = +speedSel.value) },
+      ...[0.25, 0.5, 1, 2].map((v) => el('option', { value: v, text: v + '×', selected: v === 1 ? 'selected' : false })));
+    const pauseChk = el('input', { type: 'checkbox', checked: 'checked', onchange: () => (st.pauseAtEvent = pauseChk.checked) });
+    const trans = el('div', { class: 'trans' }, btnReset, btnBack, btnPlay, btnFwd, scrub, timeLab, speedSel, btnEvt,
+      el('label', { class: 'chk', title: '播到碰撞／爆炸那一刻自動暫停' }, pauseChk, '事件停格'));
+
+    const noteBox = el('div', { class: 'preset-note' });
+    const paramBox = el('div');
+    const toggleBox = el('div', { class: 'toggles' });
+    const roBox = el('div');
+    const keys = el('details', { class: 'keys' }, el('summary', { text: '快捷鍵' }),
+      el('ul', null,
+        ...[['空白', '播放／暫停'], ['← →', '逐格'], ['Home', '回到開始'], ['E', '跳到事件'], ['A', '題目／解答'], ['C', '截圖到剪貼簿'], ['P', '收起／展開參數'], ['1–9', '切換題組']]
+          .map(([k, d]) => el('li', null, el('kbd', { text: k }), ' ' + d))));
+    const panel = el('aside', { class: 'panel' }, el('div', { class: 'panel-inner' },
+      el('section', { class: 'sec' }, el('h3', { text: '題組' }), noteBox, el('h3', { text: '參數' }), paramBox),
+      el('section', { class: 'sec' }, el('h3', { text: '顯示' }), toggleBox, el('h3', { text: '數值' }), roBox, keys)));
+
+    const app = el('div', { class: 'app' }, bar, stage, trans, panel);
+    document.body.append(app);
+
+    // ----- 收起參數面板（手寫時只留動畫），記在這台瀏覽器 -----
+    function setPanel(collapsed) {
+      app.classList.toggle('collapsed', collapsed);
+      btnPanel.textContent = collapsed ? '⚙ 展開參數' : '⚙ 收起參數';
+      btnPanel.setAttribute('aria-pressed', String(collapsed));
+      try { localStorage.setItem('sim.panelCollapsed', collapsed ? '1' : '0'); } catch (e) { /* 無痕視窗等 */ }
+    }
+    let savedCollapsed = false;
+    try { savedCollapsed = localStorage.getItem('sim.panelCollapsed') === '1'; } catch (e) { /* 同上 */ }
+    setPanel(savedCollapsed);
+
+    // ----- 參數控制 -----
+    const inputs = {};
+    params.forEach((q) => {
+      let row;
+      if (q.type === 'select') {
+        const s = el('select', { 'aria-label': q.label, onchange: () => setParam(q.key, s.value) },
+          ...q.options.map(([v, t]) => el('option', { value: v, text: t })));
+        row = el('div', { class: 'param' }, el('span', { class: 'lab', text: q.label }), el('span'), s);
+        inputs[q.key] = { row, set: (v) => (s.value = v) };
+      } else {
+        const r = el('input', { type: 'range', min: q.min, max: q.max, step: q.step, 'aria-label': q.label,
+          oninput: () => setParam(q.key, +r.value) });
+        const n = el('input', { type: 'number', min: q.min, max: q.max, step: q.step, 'aria-label': q.label,
+          onchange: () => { const v = Math.min(q.max, Math.max(q.min, +n.value)); setParam(q.key, isFinite(v) ? v : q.value); } });
+        const unit = el('span', { class: 'val' }, n, q.unit ? ' ' + q.unit : '');
+        row = el('div', { class: 'param' }, el('span', { class: 'lab', text: q.label }), unit, r);
+        inputs[q.key] = { row, set: (v) => { r.value = v; n.value = v; } };
+      }
+      paramBox.append(row);
+    });
+    toggles.forEach((q) => {
+      const c = el('input', { type: 'checkbox', checked: q.value ? 'checked' : false, onchange: () => { st.on[q.key] = c.checked; render(); } });
+      inputs['tg:' + q.key] = { set: (v) => (c.checked = !!v) };
+      toggleBox.append(el('label', null, c, q.label));
+    });
+
+    function syncInputs() {
+      params.forEach((q) => {
+        inputs[q.key].set(st.p[q.key]);
+        inputs[q.key].row.style.display = q.show && !q.show(st.p) ? 'none' : '';
+      });
+      toggles.forEach((q) => inputs['tg:' + q.key].set(st.on[q.key]));
+    }
+
+    function setParam(k, v) {
+      st.p[k] = v;
+      st.preset = null;
+      presetSel.value = '';
+      noteBox.textContent = '自訂參數。';
+      recompute(false);
+      writeHash();
+    }
+
+    function applyPreset(id, keepT) {
+      const pr = presets.find((x) => x.id === id);
+      if (!pr) return;
+      params.forEach((q) => (st.p[q.key] = q.value));
+      Object.assign(st.p, pr.params || {});
+      if (pr.toggles) Object.assign(st.on, pr.toggles);
+      st.preset = pr;
+      presetSel.value = id;
+      noteBox.replaceChildren(pr.note || '', pr.refs && pr.refs.length ? el('span', { class: 'ref', text: '相關題本：' + pr.refs.join('、') }) : '');
+      recompute(!keepT);
+      writeHash();
+    }
+
+    function recompute(resetT) {
+      pause();
+      st.model = def.compute(st.p);
+      if (resetT) st.t = 0;
+      st.t = Math.min(st.t, st.model.duration);
+      syncInputs();
+      scrub.querySelectorAll('.tick').forEach((n) => n.remove());
+      (st.model.events || []).forEach((e) => scrub.append(el('span', { class: 'tick', title: e.label, style: 'left:' + (e.t / st.model.duration) * 100 + '%' })));
+      render();
+    }
+
+    // ----- 網址 #p=ex5（從索引的跳板頁帶過來） -----
+    function readHash() {
+      const h = new URLSearchParams(location.hash.slice(1));
+      if (h.get('reveal') === '1') st.reveal = true;
+      const id = h.get('p');
+      if (id && presets.some((x) => x.id === id)) return applyPreset(id);
+      let custom = false;
+      params.forEach((q) => { if (h.has(q.key)) { st.p[q.key] = q.type === 'select' ? h.get(q.key) : +h.get(q.key); custom = true; } });
+      if (custom) { presetSel.value = ''; noteBox.textContent = '自訂參數。'; recompute(true); }
+      else if (presets.length) applyPreset(presets[0].id);
+      else recompute(true);
+    }
+    function writeHash() {
+      const h = new URLSearchParams();
+      if (st.preset) h.set('p', st.preset.id);
+      else params.forEach((q) => h.set(q.key, st.p[q.key]));
+      try { history.replaceState(null, '', '#' + h.toString()); } catch (e) { /* file:// 某些瀏覽器不給改 */ }
+    }
+
+    // ----- 時間 -----
+    let last = null, raf = 0;
+    function setT(t) { st.t = Math.max(0, Math.min(st.model.duration, t)); render(); }
+    function stepT(dir) { setT(st.t + dir * (st.model.step || st.model.duration / 100)); }
+    function jumpEvent() {
+      const ev = (st.model.events || []).find((e) => e.t > st.t + 1e-6) || (st.model.events || [])[0];
+      if (ev) setT(ev.t);
+    }
+    function pause() { st.playing = false; btnPlay.textContent = '▶'; cancelAnimationFrame(raf); last = null; }
+    function play() {
+      if (st.t >= st.model.duration - 1e-9) st.t = 0;
+      st.playing = true; btnPlay.textContent = '⏸'; last = null; raf = requestAnimationFrame(tick);
+    }
+    function togglePlay() { st.playing ? pause() : play(); }
+    function tick(now) {
+      if (!st.playing) return;
+      if (last != null) {
+        const t0 = st.t;
+        let t1 = t0 + Math.min(0.05, (now - last) / 1000) * st.speed;
+        if (st.pauseAtEvent) {
+          const ev = (st.model.events || []).find((e) => e.t > t0 + 1e-9 && e.t <= t1);
+          if (ev) { st.t = ev.t; pause(); render(); return; }
+        }
+        if (t1 >= st.model.duration) { st.t = st.model.duration; pause(); render(); return; }
+        st.t = t1;
+      }
+      last = now;
+      render();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function setReveal(v) {
+      st.reveal = v;
+      btnQ.setAttribute('aria-pressed', String(!v));
+      btnA.setAttribute('aria-pressed', String(v));
+      render();
+    }
+
+    // ----- 繪圖 -----
+    function themeName() {
+      const t = document.documentElement.getAttribute('data-theme');
+      if (t) return t;
+      return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function cycleTheme() {
+      document.documentElement.setAttribute('data-theme', themeName() === 'dark' ? 'light' : 'dark');
+      render();
+    }
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render());
+
+    function paint(ctx, W, H, pal) {
+      const m = st.model;
+      const c = { reveal: st.reveal, on: st.on, p: st.p };
+      ctx.fillStyle = pal.bg;
+      ctx.fillRect(0, 0, W, H);
+      const insetW = st.on.inset && m.inset !== false && def.inset ? W * (def.inset.width || 0.3) : 0;
+      const area = { x: 0, y: 0, w: W - insetW, h: H };
+      const g = makeG(ctx, W, H, pal, m.bounds, area);
+      g.insetRect = insetW ? { x: W - insetW, y: 0, w: insetW, h: H } : null;
+      def.draw(g, m, st.t, c);
+      // 左上角：題組＋時間
+      const cap = (st.preset ? st.preset.label : '自訂') + '　t = ' + fmt(st.t, 2) + ' s';
+      g.textPx(14 * g.u, 18 * g.u, cap, { size: 13, weight: 650, color: pal.ink2 });
+      if (st.reveal) g.textPx(14 * g.u, 36 * g.u, '解答模式', { size: 11, weight: 650, color: pal.ans });
+    }
+
+    function fitCanvas() {
+      const r = stage.getBoundingClientRect();
+      const cs = getComputedStyle(stage);
+      const aw = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const ah = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      let w = aw, h = (aw * 9) / 16;
+      if (h > ah) { h = ah; w = (ah * 16) / 9; }
+      w = Math.max(160, Math.floor(w)); h = Math.max(90, Math.floor((w * 9) / 16));
+      const dpr = window.devicePixelRatio || 1;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas._css = { w, h, dpr };
+      render();
+    }
+
+    function renderReadouts() {
+      if (!def.readouts) return;
+      const ro = def.readouts(st.model, st.t, { reveal: st.reveal, on: st.on, p: st.p });
+      const cell = (x, tag) => {
+        const ans = x && typeof x === 'object';
+        const v = ans ? x.v : x;
+        const hide = ans && x.ans && !st.reveal;
+        return el(tag || 'td', { class: hide ? 'hide' : '', text: hide ? '？' : v == null ? '' : String(v) });
+      };
+      const table = el('table', { class: 'ro' },
+        ro.head ? el('thead', null, el('tr', null, ...ro.head.map((h) => el('th', { text: h })))) : null,
+        el('tbody', null, ...(ro.rows || []).map((r) => el('tr', null, ...r.map((x) => cell(x))))));
+      const notes = el('ul', { class: 'notes' }, ...(ro.notes || []).map((n) => {
+        const hide = n.ans && !st.reveal;
+        return el('li', { class: hide ? 'hide' : n.kind || '', text: hide ? '（解答模式才顯示）' : n.text });
+      }));
+      roBox.replaceChildren(table, notes);
+    }
+
+    let roPending = false;
+    function render() {
+      if (!st.model || !canvas._css) return;
+      const { w, h, dpr } = canvas._css;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      paint(ctx, w, h, PAL[themeName()]);
+      scrubIn.value = Math.round((st.t / st.model.duration) * 1000);
+      timeLab.textContent = 't = ' + fmt(st.t, 2) + ' / ' + fmt(st.model.duration, 2) + ' s';
+      // 數值表不用每格都重建
+      if (!roPending) { roPending = true; requestAnimationFrame(() => { roPending = false; renderReadouts(); }); }
+    }
+
+    // ----- 截圖 -----
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+    function shotCanvas() {
+      const c = document.createElement('canvas');
+      c.width = 1920; c.height = 1080;
+      paint(c.getContext('2d'), 1920, 1080, PAL.light);
+      return c;
+    }
+    function fileName() {
+      const base = (meta.title || 'sim') + (st.preset ? ' ' + st.preset.label : '') + ' t' + fmt(st.t, 2);
+      return base.replace(/[\\/:*?"<>|]/g, '_') + '.png';
+    }
+    function download(blob) {
+      const a = el('a', { href: URL.createObjectURL(blob), download: fileName() });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+    async function shot() {
+      const c = shotCanvas();
+      const blobP = new Promise((res) => c.toBlob(res, 'image/png'));
+      try {
+        if (!navigator.clipboard || !global.ClipboardItem) throw new Error('no clipboard');
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]);
+        showToast('已複製到剪貼簿（1920×1080），到 GoodNotes 直接貼上');
+      } catch (e) {
+        download(await blobP);
+        showToast('瀏覽器不讓寫剪貼簿，已改成下載 PNG');
+      }
+    }
+
+    // ----- 鍵盤 -----
+    document.addEventListener('keydown', (e) => {
+      if (e.target.closest && e.target.closest('input[type=number], select') && e.key !== 'Escape') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key;
+      if (k === ' ') { e.preventDefault(); togglePlay(); }
+      else if (k === 'ArrowRight') { e.preventDefault(); pause(); stepT(1); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); pause(); stepT(-1); }
+      else if (k === 'Home') { pause(); setT(0); }
+      else if (k === 'e' || k === 'E') { pause(); jumpEvent(); }
+      else if (k === 'a' || k === 'A') setReveal(!st.reveal);
+      else if (k === 'c' || k === 'C') shot();
+      else if (k === 'p' || k === 'P') setPanel(!app.classList.contains('collapsed'));
+      else if (/^[1-9]$/.test(k) && presets[+k - 1]) applyPreset(presets[+k - 1].id);
+    });
+
+    new ResizeObserver(fitCanvas).observe(stage);
+    readHash();
+    setReveal(st.reveal);
+    fitCanvas();
+
+    // 給測試／除錯用
+    global.__sim = { st, applyPreset, setT, setReveal, setPanel, shotCanvas, model: () => st.model };
+  }
+
+  global.Sim = { run, V, fmt, vecStr, dirWord, niceStep };
+})(window);
+</script>
+<script>
+(function () {
+  const { V, fmt, vecStr, dirWord } = Sim;
+  const G = 9.8;
+
+  Sim.run({
+    params: [
+      { key: 'mA', label: 'A 質量 mA', unit: 'kg', min: 0.1, max: 5, step: 0.05, value: 1 },
+      { key: 'vA', label: 'A 碰前速率', unit: 'm/s', min: 0, max: 6, step: 0.1, value: 3 },
+      { key: 'aA', label: 'A 方向（東 0°、北 90°）', unit: '°', min: -180, max: 180, step: 5, value: 0 },
+      { key: 'mB', label: 'B 質量 mB', unit: 'kg', min: 0.1, max: 5, step: 0.05, value: 1 },
+      { key: 'vB', label: 'B 碰前速率', unit: 'm/s', min: 0, max: 6, step: 0.1, value: 0 },
+      { key: 'aB', label: 'B 方向（東 0°、北 90°）', unit: '°', min: -180, max: 180, step: 5, value: 90 },
+      { key: 'type', label: '碰撞類型', type: 'select', value: 'e', options: [
+        ['stick', '黏在一起（完全非彈性）'], ['e', '斜碰：恢復係數 e＋偏心距'], ['given', '給定 A 碰後速度 → 求 B']] },
+      { key: 'e', label: '恢復係數 e（1 = 彈性）', min: 0, max: 1, step: 0.05, value: 1, show: (p) => p.type === 'e' },
+      { key: 'b', label: '偏心距 b / (rA + rB)（0 = 正面）', min: -0.95, max: 0.95, step: 0.05, value: 0.5, show: (p) => p.type === 'e' },
+      { key: 'vA2', label: 'A 碰後速率', unit: 'm/s', min: 0, max: 6, step: 0.1, value: 1, show: (p) => p.type === 'given' },
+      { key: 'aA2', label: 'A 碰後方向', unit: '°', min: -180, max: 180, step: 5, value: 90, show: (p) => p.type === 'given' },
+      { key: 'mu', label: '動摩擦係數 μk（0 = 冰面，碰前碰後都有）', min: 0, max: 1, step: 0.05, value: 0 },
+    ],
+    toggles: [
+      { key: 'vel', label: '速度向量', value: true },
+      { key: 'trail', label: '軌跡', value: true },
+      { key: 'cm', label: '質心', value: true },
+      { key: 'inset', label: '動量向量圖', value: true },
+      { key: 'grid', label: '格線（1 m）', value: true },
+    ],
+    inset: { width: 0.3 },
+
+    compute(p) {
+      // 有摩擦時碰前只倒推 0.8 s（不然倒推回去速度太大、畫面被拉遠），播到停下就結束
+      const TC = (p.mu || 0) > 0 ? 0.8 : 2, T0 = 4;
+      const mA = p.mA, mB = p.mB, Mt = mA + mB;
+      const vA = V.pol(p.vA, p.aA), vB = V.pol(p.vB, p.aB);
+      const mmax = Math.max(mA, mB);
+      const rA = 0.22 + 0.2 * Math.cbrt(mA / mmax), rB = 0.22 + 0.2 * Math.cbrt(mB / mmax);
+      const P = V.add(V.mul(vA, mA), V.mul(vB, mB));
+      const Kb = 0.5 * mA * V.dot(vA, vA) + 0.5 * mB * V.dot(vB, vB);
+      const u = V.sub(vA, vB), un = V.len(u);
+      const collide = un > 1e-9;
+
+      let n = { x: 1, y: 0 }, cA, cB, vA2 = vA, vB2 = vB;
+      if (collide) {
+        const uh = V.mul(u, 1 / un);
+        n = p.type === 'e' ? V.rot(uh, Math.asin(Math.max(-0.95, Math.min(0.95, p.b)))) : uh;
+        cB = { x: 0, y: 0 };
+        cA = V.mul(n, -(rA + rB));
+        if (p.type === 'stick') {
+          vA2 = vB2 = V.mul(P, 1 / Mt);
+        } else if (p.type === 'e') {
+          const J = (1 + p.e) * (mA * mB / Mt) * V.dot(u, n);
+          vA2 = V.sub(vA, V.mul(n, J / mA));
+          vB2 = V.add(vB, V.mul(n, J / mB));
+        } else {
+          vA2 = V.pol(p.vA2, p.aA2);
+          vB2 = V.mul(V.sub(P, V.mul(vA2, mA)), 1 / mB);
+        }
+      } else {
+        cA = { x: 0, y: rA + rB }; cB = { x: 0, y: -(rA + rB) };
+      }
+      // 讓碰撞瞬間的質心在原點
+      const c0 = V.mul(V.add(V.mul(cA, mA), V.mul(cB, mB)), 1 / Mt);
+      cA = V.sub(cA, c0); cB = V.sub(cB, c0);
+
+      const Ka = 0.5 * mA * V.dot(vA2, vA2) + 0.5 * mB * V.dot(vB2, vB2);
+      // 摩擦：沿速度方向減速 a = μg。碰前倒推（越早越快），碰後減速到停。給的速度都是「碰撞瞬間」的
+      const a = (p.mu || 0) * G;
+      const seg = (v, tau) => {
+        const sp = V.len(v);
+        if (sp < 1e-12) return { s: 0, sp: 0, dir: { x: 0, y: 0 } };
+        const tt = tau >= 0 && a > 0 ? Math.min(tau, sp / a) : tau;
+        return { s: sp * tt - 0.5 * a * tt * tt, sp: sp - a * tt, dir: V.mul(v, 1 / sp) };
+      };
+      const mover = (c, v, v2) => ({
+        pos: (t) => { const q = seg(t < TC ? v : v2, t - TC); return V.add(c, V.mul(q.dir, q.s)); },
+        vel: (t) => { const q = seg(t < TC ? v : v2, t - TC); return V.mul(q.dir, Math.max(0, q.sp)); },
+      });
+      const MA = mover(cA, vA, vA2), MB = mover(cB, vB, vB2);
+      const A = MA.pos, B = MB.pos;
+      const skid = (v) => (a > 0 ? V.dot(v, v) / (2 * a) : Infinity);
+      const T = a > 0 ? TC + Math.max(V.len(vA2), V.len(vB2)) / a + 0.4 : T0;
+
+      const pts = [];
+      for (const t of [0, TC, T]) {
+        for (const [q, r] of [[A(t), rA], [B(t), rB]]) pts.push({ x: q.x - r, y: q.y - r }, { x: q.x + r, y: q.y + r });
+      }
+      let x0 = Math.min(...pts.map((q) => q.x)), x1 = Math.max(...pts.map((q) => q.x));
+      let y0 = Math.min(...pts.map((q) => q.y)), y1 = Math.max(...pts.map((q) => q.y));
+      const minSpan = 3;
+      if (x1 - x0 < minSpan) { const c = (x0 + x1) / 2; x0 = c - minSpan / 2; x1 = c + minSpan / 2; }
+      if (y1 - y0 < minSpan * 0.6) { const c = (y0 + y1) / 2; y0 = c - minSpan * 0.3; y1 = c + minSpan * 0.3; }
+      const span = Math.max(x1 - x0, y1 - y0);
+      const bounds = { x0: x0 - 0.06 * span, x1: x1 + 0.06 * span, y0: y0 - 0.06 * span, y1: y1 + 0.06 * span };
+      const vmax = Math.max(V.len(vA), V.len(vB), V.len(vA2), V.len(vB2), 1e-6);
+      const k = (0.16 * span) / vmax;
+
+      return {
+        mA, mB, Mt, vA, vB, vA2, vB2, rA, rB, cA, cB, n, P, Kb, Ka, collide, A, B, velA: MA.vel, velB: MB.vel,
+        mu: p.mu || 0, skidA: skid(vA2), skidB: skid(vB2),
+        type: p.type, e: p.e, impossible: collide && Ka > Kb + 1e-9,
+        TC, duration: T, events: collide ? [{ t: TC, label: '碰撞' }] : [], bounds, k, step: T / 100,
+      };
+    },
+
+    draw(g, m, t, c) {
+      const { pal, u } = g;
+      const after = m.collide && t >= m.TC;
+      const stuck = after && m.type === 'stick';
+      if (c.on.grid) g.grid({ step: 1 });
+
+      // 方位
+      const bx = 22 * u, by = g.H - 24 * u;
+      g.arrowPx(bx, by, bx + 26 * u, by, { color: pal.muted, width: 1.5, head: 7 });
+      g.arrowPx(bx, by, bx, by - 26 * u, { color: pal.muted, width: 1.5, head: 7 });
+      g.textPx(bx + 30 * u, by, '東 +x', { size: 11, color: pal.muted });
+      g.textPx(bx, by - 34 * u, '北 +y', { size: 11, color: pal.muted, align: 'center' });
+
+      const PA = m.A(t), PB = m.B(t);
+      if (c.on.trail) {
+        const tr = (f) => (t < m.TC || !m.collide ? [f(0), f(t)] : [f(0), f(m.TC), f(t)]);
+        g.path(tr(m.A), { color: pal.a, width: 1.6, dash: [1, 5] });
+        g.path(tr(m.B), { color: pal.b, width: 1.6, dash: [1, 5] });
+      }
+      // 碰撞點與法線
+      if (after) {
+        const cp = V.add(m.cA, V.mul(m.n, m.rA));
+        if (m.type === 'e') {
+          const L = (m.rA + m.rB) * 2.2;
+          g.line(cp.x - m.n.x * L, cp.y - m.n.y * L, cp.x + m.n.x * L, cp.y + m.n.y * L, { color: pal.ghost, width: 1, dash: [4, 4] });
+        }
+        g.burst(cp.x, cp.y, { r: 9 });
+      }
+
+      // 質心：沒摩擦時一路等速直線
+      const CM = (tt) => V.mul(V.add(V.mul(m.A(tt), m.mA), V.mul(m.B(tt), m.mB)), 1 / m.Mt);
+      if (c.on.cm) g.path(Array.from({ length: 61 }, (_, i) => CM((t * i) / 60)), { color: pal.cm, width: 1.5, dash: [6, 4] });
+
+      // 圓盤
+      const puck = (P, r, color, name, mass) => {
+        g.circle(P.x, P.y, r, { fill: color });
+        g.text(P.x, P.y, name, { size: 13, weight: 700, color: '#fff', align: 'center', halo: false });
+        g.text(P.x, P.y + r, fmt(mass, mass < 1 ? 2 : 1) + ' kg', { dy: -10, size: 11, weight: 600, color, align: 'center' });
+      };
+      puck(PA, m.rA, pal.a, 'A', m.mA);
+      puck(PB, m.rB, pal.b, 'B', m.mB);
+      if (c.on.cm) g.cmMark(CM(t).x, CM(t).y, { label: 'CM' });
+
+      // 速度向量
+      if (c.on.vel) {
+        const say = (v, nm, ans) => nm + (ans && !c.reveal ? '' : ' = ' + fmt(V.len(v), 2) + ' m/s');
+        const atC = Math.abs(t - m.TC) < 1e-6 || !m.mu;   // 有摩擦時，只有碰撞那一刻標數值（題目給的是碰撞瞬間）
+        const wA = m.velA(t), wB = m.velB(t);
+        if (!after) {
+          g.arrow(PA.x, PA.y, wA.x * m.k, wA.y * m.k, { color: pal.a, label: atC ? say(m.vA, 'vA') : 'vA' });
+          if (V.len(wB) > 1e-9) g.arrow(PB.x, PB.y, wB.x * m.k, wB.y * m.k, { color: pal.b, label: atC ? say(m.vB, 'vB') : 'vB' });
+          else g.text(PB.x, PB.y - m.rB, '靜止', { dy: 12, size: 11, color: pal.muted, align: 'center' });
+        } else if (stuck) {
+          const C = CM(t);
+          if (V.len(wA) > 1e-9) g.arrow(C.x, C.y, wA.x * m.k, wA.y * m.k, { color: pal.c, label: atC ? say(m.vA2, 'V′', true) + (c.reveal ? '　' + dirWord(m.vA2) : '') : 'V' });
+          else g.text(C.x, C.y, '停下', { dy: 22, size: 12, weight: 650, color: pal.c, align: 'center' });
+        } else {
+          g.arrow(PA.x, PA.y, wA.x * m.k, wA.y * m.k, { color: pal.a, label: atC ? say(m.vA2, 'vA′', m.type !== 'given') : 'vA' });
+          g.arrow(PB.x, PB.y, wB.x * m.k, wB.y * m.k, { color: pal.b, label: atC ? say(m.vB2, 'vB′', true) : 'vB' });
+        }
+      }
+      if (after && m.impossible && c.reveal) {
+        g.textPx(14 * u, g.H - 52 * u, '⚠ 碰後動能比碰前多 → 這個結果不可能發生', { size: 13, weight: 700, color: pal.warn });
+      }
+
+      // 動量向量圖
+      if (g.insetRect && c.on.inset) {
+        const pA = V.mul(m.vA, m.mA), pB = V.mul(m.vB, m.mB);
+        const before = { title: '碰前', totalLabel: 'Σp', chain: [{ ...pA, color: pal.a, label: 'pA' }, { ...pB, color: pal.b, label: 'pB' }].filter((q) => V.len(q) > 1e-9) };
+        const aft = stuck || m.type === 'stick'
+          ? { title: '碰後', chain: [{ ...V.mul(m.vA2, m.Mt), color: pal.c, label: '(mA+mB)V′' }] }
+          : { title: '碰後', totalLabel: 'Σp', chain: [{ ...V.mul(m.vA2, m.mA), color: pal.a, label: 'pA′' }, { ...V.mul(m.vB2, m.mB), color: pal.b, label: 'pB′' }].filter((q) => V.len(q) > 1e-9) };
+        aft.hidden = m.collide && t < m.TC;
+        aft.hiddenText = '（還沒碰）';
+        if (!before.chain.length) before.chain = [{ x: 0, y: 0, color: pal.ink }];
+        g.vectorPanel([before, aft], { rect: g.insetRect, title: '動量：Σp 碰前＝碰後' });
+      }
+    },
+
+    readouts(m, t, c) {
+      const sp = (v) => fmt(V.len(v), 2) + ' m/s ' + dirWord(v);
+      const pA = V.mul(m.vA, m.mA), pB = V.mul(m.vB, m.mB), pA2 = V.mul(m.vA2, m.mA), pB2 = V.mul(m.vB2, m.mB);
+      const given = m.type === 'given';
+      const rows = [
+        ['A 速度', sp(m.vA), given ? sp(m.vA2) : { v: sp(m.vA2), ans: true }],
+        ['B 速度', sp(m.vB), { v: sp(m.vB2), ans: true }],
+        ['pA (kg·m/s)', vecStr(pA), given ? vecStr(pA2) : { v: vecStr(pA2), ans: true }],
+        ['pB (kg·m/s)', vecStr(pB), { v: vecStr(pB2), ans: true }],
+        ['Σp (kg·m/s)', vecStr(m.P), { v: vecStr(V.add(pA2, pB2)), ans: true }],
+        ['K 總和 (J)', fmt(m.Kb, 3), { v: fmt(m.Ka, 3), ans: true }],
+        ['ΔK', '', { v: fmt(m.Ka - m.Kb, 3) + ' J（' + (m.Kb > 0 ? fmt((100 * (m.Ka - m.Kb)) / m.Kb, 1) : '—') + '%）', ans: true }],
+      ];
+      if (m.type !== 'stick' && V.len(m.vA2) > 1e-9 && V.len(m.vB2) > 1e-9) {
+        const cos = V.dot(m.vA2, m.vB2) / (V.len(m.vA2) * V.len(m.vB2));
+        rows.push(['vA′ 與 vB′ 夾角', '', { v: fmt((Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI, 1) + '°', ans: true }]);
+      }
+      if (m.mu > 0) {
+        if (m.type === 'stick') rows.push(['碰後滑行距離', '', { v: fmt(m.skidA, 3) + ' m', ans: true }]);
+        else rows.push(['碰後滑行 A / B', '', { v: fmt(m.skidA, 3) + ' / ' + fmt(m.skidB, 3) + ' m', ans: true }]);
+        rows.push(['摩擦作功（碰後到停）', '', { v: fmt(-m.Ka, 3) + ' J', ans: true }]);
+      }
+      const notes = [];
+      if (m.mu > 0) notes.push({ text: '有摩擦：碰撞那一瞬間 Σp 守恆（摩擦的衝量來不及作用），前後的滑行階段 p 不守恆、K 被摩擦吃掉。表中「碰前／碰後」都是碰撞瞬間。' });
+      if (!m.collide) notes.push({ kind: 'warn', text: '兩顆速度一樣，不會相撞。' });
+      else if (m.impossible) notes.push({ kind: 'warn', ans: true, text: '動量守恆，但碰後 K 多了 ' + fmt(m.Ka - m.Kb, 3) + ' J：能量憑空變多 → 不可能發生。' });
+      else if (Math.abs(m.Ka - m.Kb) < 1e-9) notes.push({ kind: 'ok', ans: true, text: 'K 守恆 → 彈性碰撞。' });
+      else notes.push({ ans: true, text: 'K 減少 ' + fmt(m.Kb - m.Ka, 3) + ' J → 不是彈性碰撞' + (m.type === 'stick' ? '（黏在一起，損失最多）' : '') + '。' });
+      return { head: ['', '碰前', '碰後'], rows, notes };
+    },
+  });
+})();
+</script>
+</body>
+</html>
