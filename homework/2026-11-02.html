@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AP Physics C 力學｜11/2 作業</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="hw.css">
+</head>
+<body>
+
+<h1>AP Physics C 力學｜11/2 作業</h1>
+<p class="hw-subtitle">11/9（一）上課前完成，約 60 分鐘</p>
+
+<p>這週練習轉動前四節（角運動學、轉動慣量、平行軸定理、轉動動能），外加一份動量單元小考（限時 25 分鐘）。</p>
+
+<div class="hw-hint">
+<strong>寫法要求：</strong>Derive／Calculate 第一行寫定義式或守恆式；Justify 寫成完整句子；答案帶單位。
+</div>
+
+<div class="hw-topbar">
+  <label for="hw-name">學生姓名</label>
+  <input type="text" id="hw-name" placeholder="請輸入姓名" autocomplete="off">
+  <span id="hw-saved-indicator"></span>
+</div>
+
+<ul class="hw-toc">
+  <li><a href="#part1">Part 1</a></li>
+  <li><a href="#part2">Part 2</a></li>
+  <li><a href="#part3">Part 3 小考</a></li>
+  <li><a href="#hw-submit">送出</a></li>
+</ul>
+
+<h2 id="part1">Part 1　轉動慣量與轉動動能（約 18 分）</h2>
+
+<div class="hw-card">
+<h3>1-1　細棒的轉動慣量</h3>
+<p>一根質量 2.0 kg、長 1.5 m 的均勻細棒。</p>
+
+<div class="hw-q" data-qid="1-1a" data-type="num" data-unit="kg·m²">
+  <div class="hw-prompt">(a) 繞通過中心、垂直棒的軸，轉動慣量 $I_{\text{cm}}$ =</div>
+</div>
+
+<div class="hw-q" data-qid="1-1b" data-type="num" data-unit="kg·m²">
+  <div class="hw-prompt">(b) 繞通過一端、垂直棒的軸，轉動慣量 $I_{\text{end}}$ =</div>
+</div>
+
+<div class="hw-q" data-qid="1-1c" data-type="derive">
+  <div class="hw-prompt">(c)（選填）寫出你用的公式或平行軸定理的式子。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>1-2　桿子落下</h3>
+<p>一根長 $L=1.2$ m 的均勻細棒，一端用無摩擦的軸固定，從水平位置由靜止放開，取 $g=9.8\ \mathrm{m/s^2}$。</p>
+
+<figure class="hw-fig">
+<svg viewBox="0 0 260 140" width="260" height="140">
+  <circle cx="40" cy="20" r="4" fill="currentColor"/>
+  <line x1="40" y1="20" x2="230" y2="20" stroke="currentColor" stroke-width="3"/>
+  <line x1="40" y1="20" x2="40" y2="130" stroke="currentColor" stroke-width="3" stroke-dasharray="6 5"/>
+  <path d="M 150 30 A 90 90 0 0 1 55 115" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <polygon points="55,115 66,110 60,122" fill="currentColor"/>
+</svg>
+<figcaption style="font-size:0.85em;color:var(--hw-muted)">水平釋放，擺到鉛直位置（虛線）</figcaption>
+</figure>
+
+<div class="hw-q" data-qid="1-2a" data-type="derive">
+  <div class="hw-prompt">(a) 推導：用能量守恆寫出棒擺到最低點（鉛直）時角速度 $\omega$ 的符號式（第一行要是守恆式）。</div>
+</div>
+
+<div class="hw-q" data-qid="1-2b" data-type="num" data-unit="rad/s">
+  <div class="hw-prompt">(b) 數值：$\omega$ =</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>1-3　疊在一起的圓盤換轉軸</h3>
+<p>三片完全相同的均勻實心圓盤，每片質量 $m$、半徑 $r$，上下對齊疊在一起、黏成一體（對自己中心軸的轉動慣量每片是 $\tfrac12mr^2$）。現在把轉軸改成垂直盤面、通過圓盤<strong>邊緣</strong>上一點的直線。整體對這個新轉軸的轉動慣量是多少？</p>
+
+<figure class="hw-fig">
+<svg viewBox="0 0 200 110" width="200" height="110">
+  <ellipse cx="90" cy="30" rx="60" ry="14" fill="none" stroke="currentColor" stroke-width="2"/>
+  <ellipse cx="90" cy="50" rx="60" ry="14" fill="none" stroke="currentColor" stroke-width="2"/>
+  <ellipse cx="90" cy="70" rx="60" ry="14" fill="none" stroke="currentColor" stroke-width="2"/>
+  <line x1="150" y1="14" x2="150" y2="90" stroke="currentColor" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="140" y1="95" x2="150" y2="95" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="150" y1="95" x2="150" y2="90" stroke="currentColor" stroke-width="1.5"/>
+  <text x="155" y="100" font-size="13" fill="currentColor">r</text>
+</svg>
+<figcaption style="font-size:0.85em;color:var(--hw-muted)">側視：三片疊起的圓盤，轉軸貼右側邊緣</figcaption>
+</figure>
+
+<div class="hw-q" data-qid="1-3" data-type="mcq">
+  <div class="hw-prompt">整體對新轉軸的轉動慣量：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $\tfrac32mr^2$</div>
+    <div data-value="B">(B) $3mr^2$</div>
+    <div data-value="C">(C) $\tfrac92mr^2$</div>
+    <div data-value="D">(D) $6mr^2$</div>
+    <div data-value="E">(E) $9mr^2$</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>1-4　轉動動能</h3>
+<div class="hw-q" data-qid="1-4" data-type="num" data-unit="J">
+  <div class="hw-prompt">1-1 的細棒繞一端的軸以 $\omega=4.0$ rad/s 轉動，轉動動能 $K$ =</div>
+</div>
+</div>
+
+<h2 id="part2">Part 2　第 5 章選擇題（7 題，約 15 分）</h2>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-1" data-type="mcq">
+  <div class="hw-prompt"><strong>2-1　角運動學</strong><br>一個圓盤順時針轉動，此刻角速率 6.0 rad/s，正在<strong>減速</strong>，角加速度大小為 1.5 rad/s²（保持不變）。2.0 s 後的角速率是多少？</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 1.5 rad/s</div>
+    <div data-value="B">(B) 3.0 rad/s</div>
+    <div data-value="C">(C) 4.5 rad/s</div>
+    <div data-value="D">(D) 9.0 rad/s</div>
+    <div data-value="E">(E) 12 rad/s</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-2" data-type="mcq">
+  <div class="hw-prompt"><strong>2-2　角位移</strong><br>一個輪子原本以 4.0 rad/s 轉動，受到固定的力矩後，以 3.0 rad/s² 的等角加速度加速 2.0 s。這 2.0 s 內的角位移最接近</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 6 rad</div>
+    <div data-value="B">(B) 8 rad</div>
+    <div data-value="C">(C) 14 rad</div>
+    <div data-value="D">(D) 20 rad</div>
+    <div data-value="E">(E) 26 rad</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-3" data-type="mcq">
+  <div class="hw-prompt"><strong>2-3　角加速度與角速度有關</strong><br>一台電風扇關掉電源時的角速率是 $\omega_0$。之後空氣阻力讓它減速，角加速度為 $\alpha=-c\,\omega^2$（$c$ 為正的常數）。關掉電源後經過時間 $t$，角速率是多少？</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $\omega_0-c\,\omega_0^2t$</div>
+    <div data-value="B">(B) $\dfrac{\omega_0}{1+c\,\omega_0 t}$</div>
+    <div data-value="C">(C) $\omega_0e^{-ct}$</div>
+    <div data-value="D">(D) $\omega_0(1-e^{-ct})$</div>
+    <div data-value="E">(E) $\omega_0+ct$</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-4" data-type="mcq">
+  <div class="hw-prompt"><strong>2-4　角位置函數</strong><br>一個轉動物體的角位置為 $\theta(t)=\theta_0+pt+qt^2$，$\theta_0$、$p$、$q$ 是常數。若要寫出另一個物體的函數，使它在<strong>每一個時刻</strong>的角速度都是原物體的兩倍，應該怎麼改？</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 只把 $p$ 加倍</div>
+    <div data-value="B">(B) 只把 $q$ 加倍</div>
+    <div data-value="C">(C) 把 $\theta_0$ 和 $p$ 加倍</div>
+    <div data-value="D">(D) 把 $\theta_0$ 和 $q$ 加倍</div>
+    <div data-value="E">(E) 把 $p$ 和 $q$ 加倍</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-5" data-type="mcq">
+  <div class="hw-prompt"><strong>2-5　純量還是向量</strong><br>下列哪一個<strong>不是</strong>向量？</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 角速度</div>
+    <div data-value="B">(B) 轉動動能</div>
+    <div data-value="C">(C) 力矩</div>
+    <div data-value="D">(D) 切線加速度</div>
+    <div data-value="E">(E) 角動量</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-6" data-type="mcq">
+  <div class="hw-prompt"><strong>2-6　讓輪子停下的功（數值選項）</strong><br>一個半徑 20 cm 的輪子，轉動慣量 1.5 kg·m²，每秒轉 4.0 圈。用貼著輪緣的摩擦力讓它停下來，摩擦力矩做的功最接近</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 0</div>
+    <div data-value="B">(B) −12 J</div>
+    <div data-value="C">(C) −19 J</div>
+    <div data-value="D">(D) −470 J</div>
+    <div data-value="E">(E) −950 J</div>
+  </div>
+</div>
+</div>
+
+<div class="hw-card">
+<div class="hw-q" data-qid="2-7" data-type="mcq">
+  <div class="hw-prompt"><strong>2-7　讓輪子停下的功（符號選項）</strong><br>一個轉動慣量 0.050 kg·m²、半徑 0.030 m 的輪子每秒轉 5.0 圈，摩擦力矩讓它停下。摩擦力矩做的功是</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $-0.25\pi$ J</div>
+    <div data-value="B">(B) $-1.25$ J</div>
+    <div data-value="C">(C) $-2.5\pi^2$ J</div>
+    <div data-value="D">(D) $-5\pi^2$ J</div>
+    <div data-value="E">(E) $-10\pi^2$ J</div>
+  </div>
+</div>
+</div>
+
+<h2 id="part3">Part 3　Unit 4 動量 小考（限時 25 分鐘，總分 13）</h2>
+
+<section class="hw-quiz" data-timer="25" data-quiz-id="unit4">
+  <div class="hw-quiz-intro">
+    <p>說明：可以用計算機，不能看筆記。按「開始小考」才會顯示題目並開始倒數 25:00；時間到會自動鎖住作答並記錄用時；提早寫完可以按「交卷」。</p>
+    <button type="button" class="hw-quiz-start hw-btn">開始小考</button>
+  </div>
+
+  <div class="hw-quiz-body" hidden>
+
+  <div class="hw-card">
+  <h3>Part A（每題 1 分）</h3>
+
+  <div class="hw-q" data-qid="partA-1" data-type="mcq">
+    <div class="hw-prompt">1. A net force $F(t)=(6.0\ \mathrm{N/s})\,t$ acts on a 3.0 kg object, initially at rest, from $t=0$ to $t=2.0$ s. What is the object's speed at $t=2.0$ s?</div>
+    <div class="hw-options">
+      <div data-value="A">(A) 2.0 m/s</div>
+      <div data-value="B">(B) 3.0 m/s</div>
+      <div data-value="C">(C) 4.0 m/s</div>
+      <div data-value="D">(D) 6.0 m/s</div>
+      <div data-value="E">(E) 12 m/s</div>
+    </div>
+  </div>
+
+  <div class="hw-q" data-qid="partA-2" data-type="mcq">
+    <div class="hw-prompt">2. A 2.0 kg object is at $x=-3.0$ m and a 6.0 kg object is at $x=5.0$ m on the same axis. Where is the center of mass of the two-object system?</div>
+    <div class="hw-options">
+      <div data-value="A">(A) $x=1.0$ m</div>
+      <div data-value="B">(B) $x=2.0$ m</div>
+      <div data-value="C">(C) $x=3.0$ m</div>
+      <div data-value="D">(D) $x=4.0$ m</div>
+      <div data-value="E">(E) $x=-1.0$ m</div>
+    </div>
+  </div>
+
+  <div class="hw-q" data-qid="partA-3" data-type="mcq">
+    <div class="hw-prompt">3. A fireworks shell of mass $3m$, moving horizontally with speed $v_0$, explodes into three fragments of equal mass $m$. Immediately after the explosion, fragment 1 moves in the original direction with speed $2v_0$, and fragment 2 is at rest. What is the velocity of fragment 3?</div>
+    <div class="hw-options">
+      <div data-value="A">(A) $0$</div>
+      <div data-value="B">(B) $v_0$, same direction as $v_0$</div>
+      <div data-value="C">(C) $2v_0$, same direction</div>
+      <div data-value="D">(D) $3v_0$, same direction</div>
+      <div data-value="E">(E) $v_0$, opposite direction</div>
+    </div>
+  </div>
+
+  <div class="hw-q" data-qid="partA-4" data-type="mcq">
+    <div class="hw-prompt">4. A ball moving east at 5.0 m/s strikes a wall and rebounds moving north at 5.0 m/s (same speed). What is the direction of the average force exerted by the wall on the ball during the collision?</div>
+    <div class="hw-options">
+      <div data-value="A">(A) East</div>
+      <div data-value="B">(B) North</div>
+      <div data-value="C">(C) Northeast</div>
+      <div data-value="D">(D) Northwest</div>
+      <div data-value="E">(E) Southwest</div>
+    </div>
+  </div>
+
+  <div class="hw-q" data-qid="partA-5" data-type="mcq">
+    <div class="hw-prompt">5. Cart A (2.0 kg, moving at 4.0 m/s) collides with cart B (2.0 kg, at rest) on a frictionless track. The carts stick together. What fraction of the system's initial kinetic energy is lost in the collision?</div>
+    <div class="hw-options">
+      <div data-value="A">(A) 0%</div>
+      <div data-value="B">(B) 25%</div>
+      <div data-value="C">(C) 50%</div>
+      <div data-value="D">(D) 75%</div>
+      <div data-value="E">(E) 100%</div>
+    </div>
+  </div>
+  </div>
+
+  <div class="hw-card">
+  <h3>Part B — FRQ: An exploding object（8 分）</h3>
+  <p>A 6.0 kg object, moving east at 8.0 m/s, explodes into two fragments of equal mass. Immediately after the explosion, fragment 1 (mass 3.0 kg) moves with speed 10 m/s in a direction $60°$ north of east.</p>
+
+  <figure class="hw-fig">
+  <svg viewBox="0 0 260 150" width="260" height="150">
+    <line x1="10" y1="120" x2="110" y2="120" stroke="currentColor" stroke-width="3"/>
+    <polygon points="110,120 98,114 98,126" fill="currentColor"/>
+    <text x="30" y="136" font-size="12" fill="currentColor">6.0 kg, 8.0 m/s east</text>
+
+    <line x1="130" y1="120" x2="230" y2="60" stroke="currentColor" stroke-width="3"/>
+    <polygon points="230,60 217,62 222,72" fill="currentColor"/>
+    <text x="150" y="55" font-size="12" fill="currentColor">碎片1：10 m/s, 60° N of E</text>
+
+    <line x1="130" y1="120" x2="90" y2="140" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="55" y="148" font-size="14" fill="currentColor">碎片2？</text>
+  </svg>
+  </figure>
+
+  <div class="hw-q" data-qid="frqB-a-mag" data-type="num" data-unit="m/s">
+    <div class="hw-prompt">(a) Calculate the velocity (magnitude and direction) of fragment 2 immediately after the explosion. (3 points)<br>magnitude =</div>
+  </div>
+  <div class="hw-q" data-qid="frqB-a-dir" data-type="direction">
+    <div class="hw-prompt">direction</div>
+  </div>
+  <div class="hw-q" data-qid="frqB-a-derive" data-type="derive">
+    <div class="hw-prompt">列式（推導過程）</div>
+  </div>
+
+  <div class="hw-q" data-qid="frqB-b" data-type="text">
+    <div class="hw-prompt">(b) Justify whether the total kinetic energy of the system is conserved in this explosion. (2 points)</div>
+  </div>
+
+  <div class="hw-q" data-qid="frqB-c" data-type="derive">
+    <div class="hw-prompt">(c) Derive a general expression for the velocity of the center of mass of a system of particles, starting from the definition of the position of the center of mass. (3 points)</div>
+  </div>
+  </div>
+
+  <button type="button" class="hw-quiz-submit hw-btn hw-btn-secondary">交卷</button>
+  </div>
+</section>
+
+<div class="hw-submit-section" id="hw-submit">
+<h2>送出</h2>
+<p class="hw-hint">寫完後按「送出」。如果老師還沒設定自動收件，會顯示一份作答摘要，請用「複製摘要」貼到 LINE 給老師，<strong>手寫照片也請另外用 LINE 傳</strong>。</p>
+<button type="button" class="hw-submit-btn hw-btn">送出</button>
+<div class="hw-submit-result"></div>
+</div>
+
+<p><a href="../index.html">← 回到首頁</a></p>
+<footer class="hw-footer">題目僅供課程練習使用</footer>
+
+<script>
+window.HW_ID = "2026-11-02";
+// Google Apps Script Web App 的 /exec 網址，之後老師填上；空字串時頁面會改顯示作答摘要供手動複製/下載
+window.HW_SUBMIT_ENDPOINT = "";
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="hw.js"></script>
+</body>
+</html>
