@@ -46,11 +46,82 @@
   <div class="hw-prompt">(b) 繞通過一端、垂直棒的軸，轉動慣量 $I_{\text{end}}$ =</div>
 </div>
 
-<div class="hw-q" data-qid="1-1c" data-type="derive">
-  <div class="hw-prompt">(c)（選填）寫出你用的公式或平行軸定理的式子。</div>
-</div>
-</div>
+<div class="hw-steps">
+  <div class="hw-prompt">(c) 用<strong>積分</strong>推導 (b) 的 $I_{\text{end}}$：照下面的步驟一步一步填（符號用按鈕或鍵盤輸入，不需要打 LaTeX）。</div>
 
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 1</span>轉動慣量的定義式是哪一個？</div>
+    <div class="hw-q" data-qid="1-1c-1" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $I=\int r\,dm$</div>
+        <div data-value="B">(B) $I=\int m\,dr$</div>
+        <div data-value="C">(C) $I=\int r^2\,dm$</div>
+        <div data-value="D">(D) $I=\int r^2\,dr$</div>
+        <div data-value="E">(E) $I=\int \dfrac{dm}{r^2}$</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 2</span>取 $x$ 軸沿著棒，原點放在轉軸（棒的一端）。棒的線密度是 $\lambda=M/L$，在位置 $x$ 的一小段長 $dx$，它的質量 $dm$ 是？</div>
+    <div class="hw-q" data-qid="1-1c-2" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $dm=M\,dx$</div>
+        <div data-value="B">(B) $dm=\dfrac{M}{L}\,x\,dx$</div>
+        <div data-value="C">(C) $dm=\dfrac{L}{M}\,dx$</div>
+        <div data-value="D">(D) $dm=\dfrac{M}{L}\,dx$</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hw-step" data-palette="M|L|x|²|³|/|·|(|)">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 3</span>把 $r$ 換成 $x$、$dm$ 換成步驟 2 的結果，填完下面每一行的空格。<br><span class="hw-step-note">乘號可打 *，平方可打 ^2 或按 ²，分數用 / 表示，例如 M/L。</span></div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">$I$</span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs">$\displaystyle\int r^2\,dm$</span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs"></span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs">
+          <span class="hw-int">
+            <span class="hw-int-hi" data-qid="1-1c-hi" data-type="sym" data-size="4" data-ph="上限"></span>
+            <span class="hw-int-sign">∫</span>
+            <span class="hw-int-lo" data-qid="1-1c-lo" data-type="sym" data-size="4" data-ph="下限"></span>
+          </span>
+          <span data-qid="1-1c-integrand" data-type="sym" data-size="12" data-ph="被積函數"></span>
+          <span class="hw-align-text">$dx$</span>
+        </span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs"></span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs">
+          <span class="hw-align-text">$\dfrac{M}{L}\Big[$</span>
+          <span data-qid="1-1c-antideriv" data-type="sym" data-size="8" data-ph="積分後"></span>
+          <span class="hw-align-text">$\Big]_{0}^{L}$</span>
+        </span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs"></span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs">
+          <span data-qid="1-1c-result" data-type="sym" data-size="12" data-ph="用 M、L 表示"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 4</span>驗算：改用平行軸定理 $I_{\text{end}}=I_{\text{cm}}+Md^2$，其中 $I_{\text{cm}}=\tfrac{1}{12}ML^2$。轉軸從中心移到一端，$d$ 應該是？</div>
+    <div class="hw-q" data-qid="1-1c-4" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $d=L$</div>
+        <div data-value="B">(B) $d=L/4$</div>
+        <div data-value="C">(C) $d=L/2$</div>
+        <div data-value="D">(D) $d=0$</div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="hw-card">
 <h3>1-2　桿子落下</h3>
 <p>一根長 $L=1.2$ m 的均勻細棒，一端用無摩擦的軸固定，從水平位置由靜止放開，取 $g=9.8\ \mathrm{m/s^2}$。</p>

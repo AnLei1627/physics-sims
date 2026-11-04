@@ -158,6 +158,67 @@ function enhanceNum(el){
   if (state.answers[qid]) validate();
 }
 
+/* ---------- 符號輸入（不用 LaTeX，用鍵盤或按鈕輸入） ---------- */
+var activeSym = null;
+
+function normalizeSym(v){
+  return v.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\*/g, "·");
+}
+
+function enhanceSym(el){
+  var qid = el.dataset.qid;
+  var input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.setAttribute("autocapitalize", "off");
+  input.spellcheck = false;
+  input.className = "hw-sym-input";
+  input.size = parseInt(el.dataset.size || "8", 10);
+  input.placeholder = el.dataset.ph || "";
+  input.value = state.answers[qid] || "";
+  el.appendChild(input);
+  input.addEventListener("focus", function(){ activeSym = input; });
+  input.addEventListener("input", function(){
+    if (el.closest(".hw-quiz-locked")) return;
+    state.answers[qid] = input.value;
+    scheduleSave();
+  });
+  input.addEventListener("blur", function(){
+    var n = normalizeSym(input.value);
+    if (n !== input.value){
+      input.value = n;
+      state.answers[qid] = n;
+      scheduleSave();
+    }
+  });
+}
+
+function buildStepPalette(step){
+  var syms = step.dataset.palette.split("|");
+  var bar = document.createElement("div");
+  bar.className = "hw-symbol-bar";
+  syms.forEach(function(sym){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hw-symbol-btn";
+    btn.textContent = sym;
+    btn.addEventListener("mousedown", function(ev){ ev.preventDefault(); });
+    btn.addEventListener("click", function(){
+      var target = activeSym && step.contains(activeSym) ? activeSym : qs(".hw-sym-input", step);
+      if (!target) return;
+      var start = target.selectionStart == null ? target.value.length : target.selectionStart;
+      var end = target.selectionEnd == null ? start : target.selectionEnd;
+      target.value = target.value.slice(0, start) + sym + target.value.slice(end);
+      target.focus();
+      target.setSelectionRange(start + sym.length, start + sym.length);
+      target.dispatchEvent(new Event("input"));
+    });
+    bar.appendChild(btn);
+  });
+  var anchor = qs(".hw-align", step) || step.lastChild;
+  step.insertBefore(bar, anchor);
+}
+
 /* ---------- 方向（角度 + 下拉） ---------- */
 function enhanceDirection(el){
   var qid = el.dataset.qid;
@@ -517,6 +578,9 @@ function buildSummaryText(){
       var v = state.answers[qid];
       var unit = el.dataset.unit || "";
       lines.push(qid + ": " + (v ? v + (unit ? " " + unit : "") : "未作答"));
+    } else if (type === "sym"){
+      var sv = state.answers[qid];
+      lines.push(qid + ": " + (sv && sv.trim() ? sv : "未作答"));
     } else if (type === "direction"){
       var ans = state.answers[qid] || {};
       var dirLabel = ans.dir ? DIR_LABELS[ans.dir] : "";
@@ -674,6 +738,8 @@ function init(){
   qsa('[data-type="mcq"]').forEach(enhanceMcq);
   qsa('[data-type="num"]').forEach(enhanceNum);
   qsa('[data-type="direction"]').forEach(enhanceDirection);
+  qsa('[data-type="sym"]').forEach(enhanceSym);
+  qsa('.hw-step[data-palette]').forEach(buildStepPalette);
   qsa('[data-type="derive"]').forEach(function(el){ enhanceDeriveOrText(el, true); });
   qsa('[data-type="text"]').forEach(function(el){ enhanceDeriveOrText(el, false); });
   qsa(".hw-quiz").forEach(enhanceQuiz);

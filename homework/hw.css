@@ -109,3 +109,19 @@ figure.hw-fig{margin:12px 0;text-align:center}
 figure.hw-fig svg{max-width:100%;height:auto;color:var(--hw-text)}
 
 footer.hw-footer{margin-top:32px;font-size:0.85em;color:var(--hw-muted)}
+
+/* 引導式步驟 */
+.hw-steps{margin:16px 0}
+.hw-step{margin:14px 0;padding:12px 14px;border:1px solid var(--hw-input-border);border-radius:10px}
+.hw-step-title{margin-bottom:8px}
+.hw-step-no{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:999px;background:var(--hw-accent);color:#fff;font-size:0.85em;font-weight:600}
+.hw-step-note{font-size:0.85em;color:var(--hw-muted)}
+.hw-step .hw-q{margin:8px 0 0}
+.hw-sym-input{font-size:1em;font-family:"SF Mono",Menlo,Consolas,monospace;min-height:40px;padding:4px 8px;box-sizing:border-box;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text);max-width:100%}
+.hw-align{display:flex;flex-direction:column;gap:14px;margin:10px 0 0;overflow-x:auto}
+.hw-align-row{display:grid;grid-template-columns:1.5em auto 1fr;align-items:center;gap:8px}
+.hw-align-lhs{min-width:1.5em;text-align:right}
+.hw-align-rhs{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hw-int{display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+.hw-int-sign{font-size:2.2em;line-height:1}
+.hw-int .hw-sym-input{width:5em}
