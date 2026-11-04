@@ -137,8 +137,62 @@
 <figcaption style="font-size:0.85em;color:var(--hw-muted)">水平釋放，擺到鉛直位置（虛線）</figcaption>
 </figure>
 
-<div class="hw-q" data-qid="1-2a" data-type="derive">
-  <div class="hw-prompt">(a) 推導：用能量守恆寫出棒擺到最低點（鉛直）時角速度 $\omega$ 的符號式（第一行要是守恆式）。</div>
+<div class="hw-steps">
+  <div class="hw-prompt">(a) 推導：用能量守恆求棒擺到最低點（鉛直）時角速度 $\omega$ 的符號式。照步驟填，不需要打 LaTeX。</div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 1</span>第一行要寫守恆式。哪一個才對？（初態：水平靜止；末態：最低點）</div>
+    <div class="hw-q" data-qid="1-2a-1" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $K_i+U_i=K_f+U_f$，其中 $K_i=0$</div>
+        <div data-value="B">(B) $K_i=K_f$（動能守恆）</div>
+        <div data-value="C">(C) $U_i=U_f$（位能守恆）</div>
+        <div data-value="D">(D) $\tau=I\alpha$ 之後直接積分</div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 2</span>棒的質心在棒中點。以最低點為 $U=0$，初態質心比末態高多少？</div>
+    <div class="hw-q" data-qid="1-2a-2" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $L$</div>
+        <div data-value="B">(B) $L/2$</div>
+        <div data-value="C">(C) $L/4$</div>
+        <div data-value="D">(D) $0$</div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 3</span>繞一端的轉動慣量 $I_{\text{end}}$ 是哪一個（質量 $m$、長 $L$）？</div>
+    <div class="hw-q" data-qid="1-2a-3" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $\tfrac{1}{12}mL^2$</div>
+        <div data-value="B">(B) $\tfrac{1}{2}mL^2$</div>
+        <div data-value="C">(C) $\tfrac{1}{3}mL^2$</div>
+        <div data-value="D">(D) $mL^2$</div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step" data-palette="m|g|L|ω|²|/|·|(|)|√|½">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 4</span>把守恆式寫成符號式，一行一行填。<br><span class="hw-step-note">乘號可打 *，平方可打 ^2，開根號可打 sqrt(…)，分數用 / 表示；也可以用上方按鈕。</span></div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs"></span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span class="hw-align-text">初態位能 = 末態轉動動能</span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs"></span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs"><span data-qid="1-2a-lhs" data-type="sym" data-size="12" data-ph="初態位能（m g …）"></span> <span class="hw-align-text">=</span> <span class="hw-align-text">½</span> <span data-qid="1-2a-I" data-type="sym" data-size="10" data-ph="I 的式子"></span> <span class="hw-align-text">ω²</span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">ω²</span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs"><span data-qid="1-2a-w2" data-type="sym" data-size="14" data-ph="用 g、L 表示"></span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">ω</span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs"><span data-qid="1-2a-w" data-type="sym" data-size="14" data-ph="用 g、L 表示"></span></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="hw-q" data-qid="1-2b" data-type="num" data-unit="rad/s">
@@ -369,17 +423,124 @@
   <div class="hw-q" data-qid="frqB-a-dir" data-type="direction">
     <div class="hw-prompt">direction</div>
   </div>
-  <div class="hw-q" data-qid="frqB-a-derive" data-type="derive">
-    <div class="hw-prompt">列式（推導過程）</div>
+    <div class="hw-steps">
+  <div class="hw-prompt">列式（推導過程）：照步驟填。</div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 1</span>爆炸時哪個量守恆（內力遠大於外力）？</div>
+    <div class="hw-q" data-qid="frqB-d-1" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) 總動量（向量）</div>
+        <div data-value="B">(B) 總動能</div>
+        <div data-value="C">(C) 總速率</div>
+        <div data-value="D">(D) 每個碎片各自的動量</div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step" data-palette="*|·|+|−|(|)|cos(60°)|sin(60°)|v2x|v2y">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 2</span>取東為 $+x$、北為 $+y$。碎片 2 的速度分量記為 $v_{2x}$、$v_{2y}$，寫出兩個方向的動量守恆式（左邊是爆炸前、右邊是爆炸後）。<br><span class="hw-step-note">三角函數可打 cos(60°)、sin(60°)；乘號可打 *。</span></div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">x：</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span data-qid="frqB-d-xl" data-type="sym" data-size="10" data-ph="爆炸前"></span> <span class="hw-align-text">=</span> <span data-qid="frqB-d-xr" data-type="sym" data-size="22" data-ph="爆炸後（含 v2x）"></span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">y：</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span data-qid="frqB-d-yl" data-type="sym" data-size="10" data-ph="爆炸前"></span> <span class="hw-align-text">=</span> <span data-qid="frqB-d-yr" data-type="sym" data-size="22" data-ph="爆炸後（含 v2y）"></span></span>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step" data-palette="-|.|0|1|2|3|4|5|6|7|8|9">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 3</span>解出分量（單位 m/s，可寫小數，例如 -8.66）。</div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">v₂ₓ</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span class="hw-align-text">=</span> <span data-qid="frqB-d-vx" data-type="sym" data-size="8" data-ph="數字"></span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">v₂ᵧ</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span class="hw-align-text">=</span> <span data-qid="frqB-d-vy" data-type="sym" data-size="8" data-ph="數字"></span></span>
+      </div>
+    </div>
+  </div>
   </div>
 
-  <div class="hw-q" data-qid="frqB-b" data-type="text">
-    <div class="hw-prompt">(b) Justify whether the total kinetic energy of the system is conserved in this explosion. (2 points)</div>
+    <div class="hw-steps">
+  <div class="hw-prompt">(b) Justify whether the total kinetic energy of the system is conserved in this explosion. (2 points)</div>
+  <div class="hw-step" data-palette=".|0|1|2|3|4|5|6|7|8|9">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 1</span>算出爆炸前後的總動能（單位 J）。碎片 2 的速率用 (a) 的結果，$v_2^2=v_{2x}^2+v_{2y}^2$。</div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">Kᵢ</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span class="hw-align-text">=</span> <span class="hw-align-text">½·6.0·8.0² =</span> <span data-qid="frqB-b-ki" data-type="sym" data-size="8" data-ph="J"></span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">K꜀</span><span class="hw-align-eq"></span>
+        <span class="hw-align-rhs"><span class="hw-align-text">=</span> <span class="hw-align-text">½·3.0·10² + ½·3.0·v₂² =</span> <span data-qid="frqB-b-kf" data-type="sym" data-size="8" data-ph="J"></span></span>
+      </div>
+    </div>
   </div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 2</span>總動能守恆嗎？</div>
+    <div class="hw-q" data-qid="frqB-b-2" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) 守恆，$K_f=K_i$</div>
+        <div data-value="B">(B) 不守恆，$K_f>K_i$</div>
+        <div data-value="C">(C) 不守恆，$K_f<K_i$</div>
+        <div data-value="D">(D) 無法判斷</div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 3</span>原因是什麼？</div>
+    <div class="hw-q" data-qid="frqB-b-3" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) 爆炸把內部儲存的能量（如化學能）轉成動能</div>
+        <div data-value="B">(B) 爆炸時外力對系統做了負功</div>
+        <div data-value="C">(C) 碎片之間發生了完全彈性碰撞</div>
+        <div data-value="D">(D) 爆炸時總動量不守恆</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <div class="hw-q" data-qid="frqB-c" data-type="derive">
-    <div class="hw-prompt">(c) Derive a general expression for the velocity of the center of mass of a system of particles, starting from the definition of the position of the center of mass. (3 points)</div>
+    <div class="hw-steps">
+  <div class="hw-prompt">(c) Derive a general expression for the velocity of the center of mass of a system of particles, starting from the definition of the position of the center of mass. (3 points)</div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 1</span>質心位置 $\vec r_{cm}$ 的定義是哪一個？（$M=\sum m_i$）</div>
+    <div class="hw-q" data-qid="frqB-c-1" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) $\vec r_{cm}=\dfrac{\sum \vec r_i}{M}$</div>
+        <div data-value="B">(B) $\vec r_{cm}=\dfrac{\sum m_i\vec r_i}{M}$</div>
+        <div data-value="C">(C) $\vec r_{cm}=\dfrac{\sum m_i}{\sum \vec r_i}$</div>
+        <div data-value="D">(D) $\vec r_{cm}=M\sum m_i\vec r_i$</div>
+      </div>
+    </div>
   </div>
+  <div class="hw-step" data-palette="Σ|mᵢ|rᵢ|vᵢ|·|/|M">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 2</span>兩邊對時間微分（$m_i$ 為常數），一行一行填。分子請用 Σ、m、v 表示。<br><span class="hw-step-note">乘號可打 *，平方可打 ^2，開根號可打 sqrt(…)，分數用 / 表示；也可以用上方按鈕。</span></div>
+    <div class="hw-align">
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">r꜀ₘ</span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs"><span data-qid="frqB-c-r" data-type="sym" data-size="14" data-ph="分子"></span> <span class="hw-align-text">/ M</span></span>
+      </div>
+      <div class="hw-align-row">
+        <span class="hw-align-lhs">v꜀ₘ</span><span class="hw-align-eq">=</span>
+        <span class="hw-align-rhs"><span class="hw-align-text">= d r꜀ₘ/dt =</span> <span data-qid="frqB-c-v" data-type="sym" data-size="14" data-ph="分子"></span> <span class="hw-align-text">/ M</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="hw-step">
+    <div class="hw-step-title"><span class="hw-step-no">步驟 3</span>把結果整理成 $M\vec v_{cm}$，它等於什麼？</div>
+    <div class="hw-q" data-qid="frqB-c-3" data-type="mcq">
+      <div class="hw-options">
+        <div data-value="A">(A) 系統總動能</div>
+        <div data-value="B">(B) 系統總動量 $\sum m_i\vec v_i$</div>
+        <div data-value="C">(C) 系統總力 $\sum \vec F_i$</div>
+        <div data-value="D">(D) 系統總質量 $M$</div>
+      </div>
+    </div>
+  </div>
+</div>
   </div>
 
   <button type="button" class="hw-quiz-submit hw-btn hw-btn-secondary">交卷</button>

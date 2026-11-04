@@ -162,7 +162,7 @@ function enhanceNum(el){
 var activeSym = null;
 
 function normalizeSym(v){
-  return v.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\*/g, "·");
+  return v.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\*/g, "·").replace(/sqrt\(/gi, "√(").replace(/\bsigma\b/gi, "Σ");
 }
 
 function enhanceSym(el){
