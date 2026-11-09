@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>斜面滾動比賽</title>
+<link rel="stylesheet" href="sim.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="title"><a class="back" href="./">第10堂</a>　斜面滾動比賽<small>a = g sinθ / (1+β)</small></div>
+    <span class="seg" id="modeSeg">
+      <button type="button" data-mode="roll" aria-pressed="true">有摩擦，純滾動</button>
+      <button type="button" data-mode="slide" aria-pressed="false">無摩擦，只滑不轉</button>
+    </span>
+    <button type="button" class="btn" id="btnPanel">⚙ 收起參數</button>
+    <button type="button" class="btn icon" id="btnTheme" title="切換深色／淺色">🌓</button>
+  </header>
+  <main class="stage" id="stage"><canvas id="cv" aria-label="四個物體滾下斜面"></canvas></main>
+  <div class="trans">
+    <button type="button" class="btn icon" id="btnReset">⏮</button>
+    <button type="button" class="btn icon" id="btnBack">◀</button>
+    <button type="button" class="btn icon primary" id="btnPlay" title="播放／暫停（空白鍵）">▶</button>
+    <button type="button" class="btn icon" id="btnFwd">▶|</button>
+    <div class="scrub"><input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="時間"></div>
+    <span class="time" id="timeLab">t = 0.00 s</span>
+    <select id="speed" aria-label="播放速度">
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+    </select>
+  </div>
+  <aside class="panel">
+    <div class="panel-inner">
+      <section class="sec">
+        <h3>純滾動</h3>
+        <div class="formula" data-tex="\beta=\dfrac{I}{MR^{2}},\quad a=\dfrac{g\sin\theta}{1+\beta}">β = I/(MR²)，a = g sinθ / (1+β)</div>
+        <div class="formula" data-tex="\dfrac{K_{\mathrm{rot}}}{K}=\dfrac{\beta}{1+\beta}">轉動動能比例 β/(1+β)</div>
+        <div class="formula" data-tex="\dfrac{K_{\mathrm{trans}}}{K}=\dfrac{1}{1+\beta}">平移動能比例 1/(1+β)</div>
+        <p class="keyline">質量和半徑會消掉，所以不影響名次。靜摩擦夠大、不打滑時摩擦不做功。沒有摩擦時大家都不轉，a 都是 g sinθ，一起到底。</p>
+      </section>
+      <section class="sec">
+        <h3>參數</h3>
+        <div class="param">
+          <span class="lab">斜面角度 θ</span>
+          <span class="val"><span data-for="theta">25</span>°</span>
+          <input id="theta" type="range" min="8" max="40" step="1" value="25" aria-label="角度">
+        </div>
+        <div class="param">
+          <span class="lab">空心圓柱內外半徑比 r/R</span>
+          <span class="val"><span data-for="k">0.50</span></span>
+          <input id="k" type="range" min="0" max="0.95" step="0.01" value="0.5" aria-label="內外半徑比">
+        </div>
+        <p class="keyline" id="betaNote"></p>
+      </section>
+      <section class="sec">
+        <h3>此刻</h3>
+        <div id="readout"></div>
+        <ul class="notes"><li id="note"></li></ul>
+      </section>
+      <details class="keys"><summary>快捷鍵</summary>
+        <ul><li><kbd>空白</kbd> 播放／暫停</li><li><kbd>Home</kbd> 回到開始</li><li><kbd>P</kbd> 收起參數</li></ul>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="sim-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  const UI = SimUI;
+  const g = UI.G;
+  const TRACK = 4;
+  const canvas = document.getElementById('cv');
+  const state = { theta: 25, k: 0.5, slide: false, t: 0, speed: 1, playing: false };
+  let raf = 0, last = 0;
+
+  function betaOf(k) { return (1 + k * k) / 2; }
+
+  function betaLabel(k) {
+    if (Math.abs(k - 0.5) < 0.005) return '5/8';
+    if (k < 0.005) return '1/2';
+    return UI.fmt(betaOf(k), 3);
+  }
+
+  function roster() {
+    const th = state.theta * Math.PI / 180;
+    const s = Math.sin(th);
+    const list = [
+      { name: '實心球', beta: 2 / 5, tag: '2/5', kind: 'sphere', color: 'a' },
+      { name: '實心圓柱', beta: 1 / 2, tag: '1/2', kind: 'cyl', color: 'b' },
+      { name: '厚壁空心圓柱', beta: betaOf(state.k), tag: betaLabel(state.k), kind: 'thick', color: 'c' },
+      { name: '薄圓環', beta: 1, tag: '1', kind: 'hoop', color: 'cm' },
+    ];
+    list.forEach((o) => {
+      o.a = state.slide ? g * s : g * s / (1 + o.beta);
+      o.fracRot = state.slide ? 0 : o.beta / (1 + o.beta);
+      o.fracTrans = 1 - o.fracRot;
+      o.tFinish = Math.sqrt((2 * TRACK) / o.a);
+    });
+    return list;
+  }
+
+  function duration() {
+    const rs = roster();
+    return Math.max.apply(null, rs.map((o) => o.tFinish)) + 0.25;
+  }
+
+  function pose(o) {
+    const s = Math.min(TRACK, 0.5 * o.a * state.t * state.t);
+    const done = s >= TRACK - 1e-6;
+    const v = done ? o.a * o.tFinish : o.a * state.t;
+    return { s: s, v: v, done: done };
+  }
+
+  function pause() { state.playing = false; cancelAnimationFrame(raf); last = 0; }
+  function play() {
+    if (state.t >= duration() - 1e-3) state.t = 0;
+    state.playing = true; last = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+  }
+  function toggle() { state.playing ? pause() : play(); }
+  function tick(now) {
+    if (!state.playing) return;
+    if (last) {
+      state.t += Math.min(0.05, (now - last) / 1000) * state.speed;
+      if (state.t >= duration()) { state.t = duration(); pause(); render(); return; }
+    }
+    last = now; render(); raf = requestAnimationFrame(tick);
+  }
+  function seek(t) { state.t = Math.max(0, Math.min(duration(), t)); render(); }
+
+  function drawShape(p, o, cx, cy, Rpx, phi) {
+    const pal = p.pal;
+    const color = pal[o.color];
+    const u = p.u;
+    if (o.kind === 'hoop') {
+      p.circle(cx, cy, Rpx, { color: color, width: 3.2 });
+    } else if (o.kind === 'thick') {
+      p.circle(cx, cy, Rpx, { color: color, width: 2.4 });
+      p.circle(cx, cy, Math.max(1.5 * u, Rpx * state.k), { color: color, width: 2 });
+    } else if (o.kind === 'cyl') {
+      p.circle(cx, cy, Rpx, { fill: color, color: color });
+      p.ctx.globalAlpha = 0.35;
+      p.circle(cx, cy, Rpx * 0.72, { color: '#fff', width: 1.4 });
+      p.ctx.globalAlpha = 1;
+    } else {
+      p.circle(cx, cy, Rpx, { fill: color, color: color });
+      p.ctx.globalAlpha = 0.4;
+      p.circle(cx - Rpx * 0.28, cy - Rpx * 0.28, Rpx * 0.28, { fill: '#fff' });
+      p.ctx.globalAlpha = 1;
+    }
+    const ang = -Math.PI / 2 + phi;
+    p.line(cx, cy, cx + Rpx * Math.cos(ang), cy + Rpx * Math.sin(ang), { color: o.kind === 'sphere' || o.kind === 'cyl' ? '#fff' : color, width: 2 });
+  }
+
+  function render() {
+    const p = UI.beginFrame(canvas);
+    if (!p) return;
+    const pal = p.pal;
+    const u = p.u;
+    const th = state.theta * Math.PI / 180;
+    const dir = { x: Math.cos(th), y: Math.sin(th) };
+    const nrm = { x: -Math.sin(th), y: -Math.cos(th) };
+    const len = Math.min(p.w * 0.58, p.h * 0.72);
+    const x0 = p.w * 0.14;
+    const y0 = p.h * 0.18;
+    const x1 = x0 + dir.x * len;
+    const y1 = y0 + dir.y * len;
+    const ppm = len / TRACK;
+    const rs = roster();
+
+    // 楔形
+    const baseY = Math.min(p.h - 16 * u, y1 + 36 * u);
+    p.poly([
+      { x: x0, y: y0 },
+      { x: x1, y: y1 },
+      { x: x1, y: baseY },
+      { x: x0, y: baseY },
+    ], { fill: pal.grid, color: pal.ground, width: 1.4, close: true });
+    p.line(x0, y0, x1, y1, { color: pal.ink, width: 2.2 });
+
+    const mid = 0.42;
+    p.text(x0 + dir.x * len * mid + 8 * u, y0 + dir.y * len * mid + 18 * u, 'θ = ' + state.theta + '°', { size: 14, weight: 700, color: pal.ink2 });
+
+    const Rpx = 13 * u;
+    const gap = 30 * u;
+    rs.forEach((o, i) => {
+      const pose = poseOf(o);
+      const along = (pose.s / TRACK) * len;
+      const lift = Rpx + i * gap;
+      const cx = x0 + dir.x * along + nrm.x * lift;
+      const cy = y0 + dir.y * along + nrm.y * lift;
+      const Rm = Rpx / ppm;
+      const phi = state.slide ? 0 : pose.s / Rm;
+      const lane0 = { x: x0 + nrm.x * lift, y: y0 + nrm.y * lift };
+      const lane1 = { x: x1 + nrm.x * lift, y: y1 + nrm.y * lift };
+      p.line(lane0.x, lane0.y, lane1.x, lane1.y, { color: pal.grid2, width: 1, dash: [3, 4] });
+      drawShape(p, o, cx, cy, Rpx, phi);
+      if (pose.done) {
+        p.text(cx + dir.x * 16 * u, cy + dir.y * 16 * u, '到', { size: 11, color: pal.ok, weight: 750 });
+      }
+    });
+
+    // 終點線
+    const reach = (3 * gap + Rpx * 2);
+    p.line(x1, y1, x1 + nrm.x * reach, y1 + nrm.y * reach, { color: pal.warn, width: 1.6, dash: [4, 3] });
+    p.text(x1 + nrm.x * reach, y1 + nrm.y * reach - 8 * u, '終點 ' + TRACK.toFixed(0) + ' m', { size: 12, color: pal.warn, weight: 650 });
+
+    // 動能條
+    const barX = p.w * 0.73;
+    const barW = p.w - barX - 16 * u;
+    p.text(barX, 22 * u, state.slide ? '動能：全部平移' : '動能分配（不隨速率變）', { size: 12, weight: 700, color: pal.ink2 });
+    rs.forEach((o, i) => {
+      const y = 40 * u + i * 46 * u;
+      p.text(barX, y, o.name + '  β=' + o.tag, { size: 11, color: pal[o.color], weight: 650 });
+      const by = y + 12 * u;
+      const bh = 12 * u;
+      p.roundRect(barX, by, barW, bh, 3 * u, { fill: pal.grid, color: pal.grid });
+      const wt = Math.max(0, barW * o.fracTrans);
+      const wr = barW - wt;
+      if (wt > 0.5) p.roundRect(barX, by, wt, bh, 3 * u, { fill: pal[o.color] });
+      if (wr > 0.5) {
+        p.ctx.globalAlpha = 0.45;
+        p.roundRect(barX + wt, by, wr, bh, 3 * u, { fill: pal[o.color] });
+        p.ctx.globalAlpha = 1;
+      }
+      p.text(barX, by + bh + 10 * u, '平移 ' + Math.round(o.fracTrans * 100) + '%　轉動 ' + Math.round(o.fracRot * 100) + '%', { size: 10, color: pal.ink2 });
+    });
+
+    const caption = state.slide ? '無摩擦：不轉，加速度都是 g sinθ' : '純滾動：β 越小，平移分到的能量越多，越快到底';
+    p.text(12 * u, p.h - 12 * u, caption, { size: 13, weight: 700, color: state.slide ? pal.warn : pal.ink });
+
+    const T = duration();
+    const scrub = document.getElementById('scrub');
+    if (document.activeElement !== scrub) scrub.value = String(Math.round(state.t / T * 1000));
+    document.getElementById('timeLab').textContent = 't = ' + UI.fmt(state.t, 2) + ' / ' + UI.fmt(T, 2) + ' s';
+    document.getElementById('btnPlay').textContent = state.playing ? '⏸' : '▶';
+
+    const ranked = rs.map((o) => ({ name: o.name, t: o.tFinish, a: o.a, pose: poseOf(o), frac: o.fracRot, tag: o.tag }))
+      .sort((a, b) => a.t - b.t);
+    document.getElementById('readout').innerHTML = '<table class="ro"><thead><tr><th>物體</th><th>a</th><th>s</th><th>預計</th></tr></thead><tbody>' +
+      ranked.map((o) => '<tr><td>' + o.name + '</td><td>' + UI.fmt(o.a, 2) + '</td><td>' + UI.fmt(o.pose.s, 2) + ' m</td><td>' + UI.fmt(o.t, 2) + ' s</td></tr>').join('') +
+      '</tbody></table>';
+    document.getElementById('betaNote').textContent = '厚壁空心圓柱 β = [1 + (r/R)²] / 2 = ' + betaLabel(state.k) + '（r/R = 0.5 時是 5/8）。實心球 2/5，實心圓柱 1/2，薄圓環 1。';
+    const note = document.getElementById('note');
+    if (state.slide) {
+      note.className = 'warn';
+      note.textContent = '沒有摩擦就不能提供力矩，轉速維持 0。四個 a 都是 g sinθ = ' + UI.fmt(g * Math.sin(th), 2) + ' m/s²，同時抵達。';
+    } else {
+      note.className = '';
+      note.textContent = '預計名次：' + ranked.map((o, i) => (i + 1) + ' ' + o.name).join('、') + '。時間比是 √(1+β) 的比。';
+    }
+  }
+
+  function poseOf(o) { return pose(o); }
+
+  function setSlide(slide) {
+    state.slide = slide;
+    document.querySelectorAll('#modeSeg button').forEach((b) => {
+      b.setAttribute('aria-pressed', String((b.dataset.mode === 'slide') === slide));
+    });
+    pause(); state.t = 0; render();
+  }
+
+  document.getElementById('modeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    setSlide(b.dataset.mode === 'slide');
+  });
+  UI.bindRange('theta', (v) => { state.theta = v; pause(); state.t = 0; render(); });
+  UI.bindRange('k', (v) => { state.k = v; pause(); state.t = 0; render(); });
+  document.getElementById('speed').addEventListener('change', (e) => { state.speed = parseFloat(e.target.value); });
+  document.getElementById('btnPlay').addEventListener('click', toggle);
+  document.getElementById('btnReset').addEventListener('click', () => { pause(); seek(0); });
+  document.getElementById('btnBack').addEventListener('click', () => { pause(); seek(state.t - 0.08); });
+  document.getElementById('btnFwd').addEventListener('click', () => { pause(); seek(state.t + 0.08); });
+  document.getElementById('scrub').addEventListener('input', (e) => { pause(); seek(e.target.value / 1000 * duration()); });
+  document.getElementById('btnTheme').addEventListener('click', () => { UI.cycleTheme(); render(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.getAttribute('data-theme')) render(); });
+  UI.wirePanel(document.getElementById('btnPanel'), document.getElementById('app'));
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.code === 'Home') { pause(); seek(0); }
+    else if (e.key === 'p' || e.key === 'P') document.getElementById('btnPanel').click();
+  });
+
+  function selfCheck() {
+    const errors = [];
+    const saved = Object.assign({}, state);
+    state.theta = 30; state.k = 0.5; state.slide = false;
+    const rs = roster();
+    const sphere = rs[0], cyl = rs[1], thick = rs[2], hoop = rs[3];
+    if (Math.abs(thick.beta - 5 / 8) > 1e-9) errors.push('beta ' + thick.beta);
+    const s = Math.sin(30 * Math.PI / 180);
+    if (Math.abs(sphere.a - g * s / 1.4) > 1e-9) errors.push('sphere a');
+    if (Math.abs(cyl.a - g * s / 1.5) > 1e-9) errors.push('cyl a');
+    if (Math.abs(hoop.a - g * s / 2) > 1e-9) errors.push('hoop a');
+    if (!(sphere.a > cyl.a && cyl.a > thick.a && thick.a > hoop.a)) errors.push('order');
+    if (Math.abs(sphere.fracRot - (0.4 / 1.4)) > 1e-9) errors.push('frac');
+    state.slide = true;
+    const sl = roster();
+    const a0 = g * s;
+    sl.forEach((o) => {
+      if (Math.abs(o.a - a0) > 1e-9) errors.push('slide a ' + o.name);
+      if (o.fracRot !== 0) errors.push('slide rot');
+    });
+    state.k = 0;
+    state.slide = false;
+    if (Math.abs(roster()[2].beta - 0.5) > 1e-9) errors.push('k0');
+    state.k = 1;
+    if (Math.abs(betaOf(1) - 1) > 1e-9) errors.push('k1');
+    Object.assign(state, saved);
+    return UI.reportCheck(errors);
+  }
+
+  UI.typeset(document);
+  UI.watchResize(document.getElementById('stage'), canvas, render);
+  const ok = selfCheck();
+  window.__sim = {
+    id: 'rolling-race',
+    ready: true,
+    ok: ok,
+    selfCheck: selfCheck,
+    seek: (t) => { pause(); seek(t); },
+    set: (patch) => { Object.assign(state, patch); pause(); render(); },
+    roster: roster,
+    snapshot: () => ({ t: state.t, slide: state.slide, k: state.k, theta: state.theta, objects: roster().map((o) => Object.assign({ pose: pose(o) }, o)) }),
+  };
+})();
+</script>
+</body>
+</html>

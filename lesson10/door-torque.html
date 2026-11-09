@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開門的力矩</title>
+<link rel="stylesheet" href="sim.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="title"><a class="back" href="./">第10堂</a>　開門的力矩<small>俯視</small></div>
+    <button type="button" class="btn" id="btnZero">對準鉸鏈</button>
+    <button type="button" class="btn" id="btnPerp">垂直門板</button>
+    <button type="button" class="btn" id="btnFlip">反向</button>
+    <button type="button" class="btn" id="btnReset">重設</button>
+    <button type="button" class="btn" id="btnPanel">⚙ 收起參數</button>
+    <button type="button" class="btn icon" id="btnTheme" title="切換深色／淺色">🌓</button>
+  </header>
+  <main class="stage" id="stage"><canvas id="cv" class="drag" aria-label="門的俯視與力矩"></canvas></main>
+  <div class="trans">
+    <span class="hintline">拖曳門上的施力點，或拖曳箭頭末端改方向。作用線通過鉸鏈時，力矩為 0。</span>
+  </div>
+  <aside class="panel">
+    <div class="panel-inner">
+      <section class="sec">
+        <h3>定義</h3>
+        <div class="formula" data-tex="\tau = rF\sin\theta = F\ell">τ = r F sinθ = F × 力臂</div>
+        <ul class="notes">
+          <li>r 是鉸鏈到施力點的距離。θ 是 r 和 F 的夾角，從 r 轉到 F。</li>
+          <li>力臂 ℓ 是鉸鏈到力的作用線的垂直距離（虛線）。ℓ = r |sinθ|。</li>
+          <li>正號是出紙面 ⊙（逆時針，往畫面上側轉）。負號是入紙面 ⊗（順時針）。</li>
+        </ul>
+      </section>
+      <section class="sec">
+        <h3>參數</h3>
+        <div class="param">
+          <span class="lab">門寬 L</span>
+          <span class="val"><span data-for="doorL">0.90</span> m</span>
+          <input id="doorL" type="range" min="0.6" max="1.2" step="0.05" value="0.9" aria-label="門寬">
+        </div>
+        <div class="param">
+          <span class="lab">施力距離 r</span>
+          <span class="val"><span data-for="r">0.78</span> m</span>
+          <input id="r" type="range" min="0.08" max="0.9" step="0.01" value="0.78" aria-label="施力距離">
+        </div>
+        <div class="param">
+          <span class="lab">力的大小 F</span>
+          <span class="val"><span data-for="F">40</span> N</span>
+          <input id="F" type="range" min="5" max="120" step="1" value="40" aria-label="力的大小">
+        </div>
+        <div class="param">
+          <span class="lab">夾角 θ</span>
+          <span class="val"><span data-for="theta">90</span>°</span>
+          <input id="theta" type="range" min="-180" max="180" step="1" value="90" aria-label="力與 r 的夾角">
+        </div>
+      </section>
+      <section class="sec">
+        <h3>此刻</h3>
+        <table class="ro">
+          <tbody>
+            <tr><td>r</td><td id="oR">—</td></tr>
+            <tr><td>F</td><td id="oF">—</td></tr>
+            <tr><td>θ</td><td id="oTh">—</td></tr>
+            <tr><td>sinθ</td><td id="oSin">—</td></tr>
+            <tr><td>力臂 ℓ</td><td id="oLever">—</td></tr>
+            <tr id="rowTau"><td>τ = r F sinθ</td><td id="oTau">—</td></tr>
+            <tr><td>方向</td><td id="oDir">—</td></tr>
+          </tbody>
+        </table>
+        <ul class="notes"><li id="note"></li></ul>
+      </section>
+      <details class="keys"><summary>快捷鍵</summary>
+        <ul><li><kbd>P</kbd> 收起參數</li></ul>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="sim-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  const UI = SimUI;
+  const canvas = document.getElementById('cv');
+  const TH = 0.09;
+
+  const state = { L: 0.9, x: 0.78, F: 40, phi: Math.PI / 2 };
+  let view = null;
+  let drag = null;
+
+  function info() {
+    const rx = state.x, ry = 0;
+    const u = { x: Math.cos(state.phi), y: Math.sin(state.phi) };
+    const r = Math.hypot(rx, ry);
+    const tau = rx * (state.F * u.y) - ry * (state.F * u.x);
+    const theta = Math.atan2(rx * u.y - ry * u.x, rx * u.x + ry * u.y);
+    const t = -(rx * u.x + ry * u.y);
+    const foot = { x: rx + t * u.x, y: ry + t * u.y };
+    const lever = Math.hypot(foot.x, foot.y);
+    return { r: r, tau: tau, theta: theta, foot: foot, lever: lever, u: u };
+  }
+
+  function layout(w, h) {
+    const u = Math.max(0.55, w / 960);
+    const worldW = state.L + 1.05;
+    const worldH = 1.35;
+    const scale = Math.min((w - 48 * u) / worldW, (h - 56 * u) / worldH);
+    return {
+      u: u,
+      scale: scale,
+      ox: 40 * u + 0.32 * scale,
+      oy: h * 0.56,
+      w: w,
+      h: h,
+    };
+  }
+
+  function W(x, y) {
+    return { x: view.ox + x * view.scale, y: view.oy - y * view.scale };
+  }
+  function inv(px, py) {
+    return { x: (px - view.ox) / view.scale, y: -(py - view.oy) / view.scale };
+  }
+
+  function syncSliders() {
+    const inf = info();
+    const rEl = document.getElementById('r');
+    rEl.max = String(state.L);
+    rEl.value = String(state.x);
+    document.querySelector('[data-for="r"]').textContent = UI.fmt(state.x, 2);
+    document.getElementById('doorL').value = String(state.L);
+    document.querySelector('[data-for="doorL"]').textContent = UI.fmt(state.L, 2);
+    document.getElementById('F').value = String(state.F);
+    document.querySelector('[data-for="F"]').textContent = UI.fmt(state.F, 0);
+    let deg = inf.theta * 180 / Math.PI;
+    if (deg > 180) deg -= 360;
+    if (deg < -180) deg += 360;
+    const th = document.getElementById('theta');
+    if (document.activeElement !== th) th.value = String(Math.round(deg));
+    document.querySelector('[data-for="theta"]').textContent = UI.fmt(deg, 0);
+  }
+
+  function render() {
+    const p = UI.beginFrame(canvas);
+    if (!p) return;
+    view = layout(p.w, p.h);
+    const inf = info();
+    const u = p.u;
+    const pal = p.pal;
+    const hinge = W(0, 0);
+    const tip = W(state.L, 0);
+    const pt = W(state.x, 0);
+    const top = W(0, TH / 2);
+    const bot = W(state.L, -TH / 2);
+
+    p.text(16 * u, 18 * u, '俯視：鉸鏈在左，推門看力矩的正負', { size: 13, weight: 650, color: pal.ink2 });
+
+    // 牆
+    p.ctx.save();
+    p.ctx.beginPath();
+    for (let y = 24 * u; y < p.h - 16 * u; y += 14 * u) {
+      p.ctx.moveTo(8 * u, y);
+      p.ctx.lineTo(hinge.x - 6 * u, y + 8 * u);
+    }
+    p.ctx.strokeStyle = pal.grid2;
+    p.ctx.lineWidth = 1.2 * u;
+    p.ctx.stroke();
+    p.ctx.restore();
+    p.line(hinge.x, 28 * u, hinge.x, p.h - 20 * u, { color: pal.ground, width: 4, cap: 'butt' });
+
+    // 門
+    p.roundRect(hinge.x, top.y, tip.x - hinge.x, bot.y - top.y, 6 * u, { fill: pal.a, color: pal.a, width: 1 });
+    p.ctx.globalAlpha = 0.18;
+    p.ctx.fillStyle = '#fff';
+    p.ctx.fillRect(hinge.x, top.y, (tip.x - hinge.x), (bot.y - top.y) * 0.45);
+    p.ctx.globalAlpha = 1;
+    p.text((hinge.x + tip.x) / 2, hinge.y, '門', { size: 14, weight: 700, color: '#fff', halo: false, align: 'center' });
+
+    // 鉸鏈
+    p.circle(hinge.x, hinge.y - 16 * u, 5 * u, { fill: pal.ink });
+    p.circle(hinge.x, hinge.y + 16 * u, 5 * u, { fill: pal.ink });
+    p.text(hinge.x - 8 * u, hinge.y - 34 * u, '鉸鏈', { size: 12, color: pal.ink2, align: 'right' });
+
+    // r 尺寸線
+    const dimY = hinge.y + (bot.y - hinge.y) + 28 * u;
+    p.line(hinge.x, dimY, pt.x, dimY, { color: pal.ink2, width: 1.4 });
+    p.line(hinge.x, dimY - 5 * u, hinge.x, dimY + 5 * u, { color: pal.ink2, width: 1.4 });
+    p.line(pt.x, dimY - 5 * u, pt.x, dimY + 5 * u, { color: pal.ink2, width: 1.4 });
+    p.text((hinge.x + pt.x) / 2, dimY + 12 * u, 'r = ' + UI.fmt(inf.r, 2) + ' m', { size: 13, align: 'center', weight: 650, color: pal.ink });
+
+    // 作用線
+    const reach = 1.6;
+    const a = W(state.x - inf.u.x * reach, -inf.u.y * reach);
+    const b = W(state.x + inf.u.x * reach, inf.u.y * reach);
+    const through = inf.lever < 0.012;
+    p.line(a.x, a.y, b.x, b.y, { color: through ? pal.warn : pal.ghost, width: through ? 2 : 1.3, dash: [6, 5] });
+
+    // 力臂
+    if (!through) {
+      const foot = W(inf.foot.x, inf.foot.y);
+      p.line(hinge.x, hinge.y, foot.x, foot.y, { color: pal.bg, width: 6 });
+      p.line(hinge.x, hinge.y, foot.x, foot.y, { color: pal.cm, width: 2, dash: [4, 3] });
+      p.circle(foot.x, foot.y, 3.2 * u, { fill: pal.cm });
+      const dx = foot.x - hinge.x, dy = foot.y - hinge.y;
+      const len = Math.hypot(dx, dy) || 1;
+      let nx = -dy / len, ny = dx / len;
+      if (ny > 0) { nx = -nx; ny = -ny; }
+      const mx = (hinge.x + foot.x) / 2 + nx * 18 * u;
+      const my = (hinge.y + foot.y) / 2 + ny * 18 * u;
+      p.text(mx, my, 'ℓ = ' + UI.fmt(inf.lever, 2) + ' m', { size: 13, color: pal.cm, weight: 700 });
+    }
+
+    // 力箭頭（固定像素長，方便抓）
+    const arrowLen = 92 * u;
+    const tipA = { x: pt.x + inf.u.x * arrowLen, y: pt.y - inf.u.y * arrowLen };
+    p.arrow(pt.x, pt.y, tipA.x, tipA.y, { color: pal.b, width: 3, head: 11 });
+    const px = inf.u.y, py = inf.u.x;
+    p.text(tipA.x + px * 16 * u, tipA.y + py * 16 * u, 'F = ' + UI.fmt(state.F, 0) + ' N', {
+      size: 14, color: pal.b, weight: 750, align: 'center',
+    });
+
+    // 把手
+    p.circle(pt.x, pt.y, 8 * u, { fill: pal.bg, color: pal.b, width: 2 });
+    p.circle(tipA.x, tipA.y, 7 * u, { fill: pal.bg, color: pal.ink, width: 1.6 });
+
+    // θ 弧
+    if (Math.abs(inf.theta) > 0.08 && Math.abs(inf.theta) < 2.7) {
+      const angR = 0;
+      const steps = 16;
+      const rad = 26 * u;
+      const pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const a = angR + inf.theta * (i / steps);
+        pts.push(W(state.x + (rad / view.scale) * Math.cos(a), (rad / view.scale) * Math.sin(a)));
+      }
+      p.poly(pts, { color: pal.ink, width: 1.5 });
+      const mid = pts[Math.floor(steps / 2)];
+      p.text(mid.x + 8 * u, mid.y, 'θ', { size: 14, weight: 700 });
+    }
+
+    // 正負號
+    const signX = hinge.x + 36 * u;
+    const signY = 48 * u;
+    p.circle(signX, signY, 14 * u, { color: through ? pal.muted : (inf.tau > 0 ? pal.ok : pal.warn), width: 2 });
+    if (through) {
+      p.text(signX + 22 * u, signY, 'τ = 0', { size: 16, weight: 750, color: pal.warn });
+    } else if (inf.tau > 0) {
+      p.circle(signX, signY, 3 * u, { fill: pal.ok });
+      p.text(signX + 22 * u, signY, '⊙ 出紙面（逆時針）', { size: 15, weight: 750, color: pal.ok });
+    } else {
+      p.line(signX - 6 * u, signY - 6 * u, signX + 6 * u, signY + 6 * u, { color: pal.warn, width: 2 });
+      p.line(signX - 6 * u, signY + 6 * u, signX + 6 * u, signY - 6 * u, { color: pal.warn, width: 2 });
+      p.text(signX + 22 * u, signY, '⊗ 入紙面（順時針）', { size: 15, weight: 750, color: pal.warn });
+    }
+
+    const deg = inf.theta * 180 / Math.PI;
+    document.getElementById('oR').textContent = UI.fmt(inf.r, 3) + ' m';
+    document.getElementById('oF').textContent = UI.fmt(state.F, 1) + ' N';
+    document.getElementById('oTh').textContent = UI.fmt(deg, 1) + '°';
+    document.getElementById('oSin').textContent = UI.fmt(Math.sin(inf.theta), 3);
+    document.getElementById('oLever').textContent = UI.fmt(inf.lever, 3) + ' m';
+    document.getElementById('oTau').textContent = UI.fmt(inf.tau, 2) + ' N·m';
+    document.getElementById('rowTau').className = through ? 'warn' : '';
+    document.getElementById('oDir').textContent = through ? '沒有轉向' : (inf.tau > 0 ? '出紙面 ⊙' : '入紙面 ⊗');
+    const note = document.getElementById('note');
+    if (through) {
+      note.className = 'warn';
+      note.textContent = '作用線穿過鉸鏈，力臂是 0，所以 τ = 0。人在推，門不會轉。';
+    } else {
+      note.className = '';
+      note.textContent = '同一股力，離鉸鏈越遠、方向越接近垂直門板，|sinθ| 越接近 1，力矩越大。';
+    }
+    view.handle = tipA;
+    view.point = pt;
+    syncSliders();
+  }
+
+  function hit(px, py) {
+    if (!view) return null;
+    if (Math.hypot(px - view.handle.x, py - view.handle.y) < 16) return 'angle';
+    if (Math.hypot(px - view.point.x, py - view.point.y) < 16) return 'point';
+    const w = inv(px, py);
+    if (w.x >= 0 && w.x <= state.L && Math.abs(w.y) <= TH / 2 + 0.03) return 'point';
+    return null;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const q = UI.canvasPoint(canvas, e);
+    const which = hit(q.x, q.y);
+    if (!which) return;
+    drag = which;
+    canvas.setPointerCapture(e.pointerId);
+    moveTo(q);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    moveTo(UI.canvasPoint(canvas, e));
+  });
+  function endDrag() { drag = null; }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  function moveTo(q) {
+    const w = inv(q.x, q.y);
+    if (drag === 'point') {
+      state.x = Math.min(state.L, Math.max(0.08, w.x));
+    } else if (drag === 'angle') {
+      state.phi = Math.atan2(w.y, w.x - state.x);
+    }
+    render();
+  }
+
+  function setThetaDeg(deg) {
+    state.phi = deg * Math.PI / 180;
+    render();
+  }
+
+  UI.bindRange('doorL', (v) => {
+    state.L = v;
+    if (state.x > state.L) state.x = state.L;
+    const r = document.getElementById('r');
+    r.max = String(state.L);
+    render();
+  });
+  UI.bindRange('r', (v) => { state.x = Math.min(state.L, v); render(); });
+  UI.bindRange('F', (v) => { state.F = v; render(); });
+  UI.bindRange('theta', (v) => setThetaDeg(v));
+
+  document.getElementById('btnZero').addEventListener('click', () => setThetaDeg(180));
+  document.getElementById('btnPerp').addEventListener('click', () => setThetaDeg(90));
+  document.getElementById('btnFlip').addEventListener('click', () => {
+    const deg = info().theta * 180 / Math.PI + 180;
+    setThetaDeg(((deg + 540) % 360) - 180);
+  });
+  document.getElementById('btnReset').addEventListener('click', () => {
+    state.L = 0.9; state.x = 0.78; state.F = 40; state.phi = Math.PI / 2;
+    render();
+  });
+  document.getElementById('btnTheme').addEventListener('click', () => { UI.cycleTheme(); render(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.getAttribute('data-theme')) render(); });
+  UI.wirePanel(document.getElementById('btnPanel'), document.getElementById('app'));
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT') return;
+    if (e.key === 'p' || e.key === 'P') document.getElementById('btnPanel').click();
+  });
+
+  function selfCheck() {
+    const errors = [];
+    state.L = 0.9; state.x = 0.8; state.F = 40; state.phi = Math.PI / 2;
+    let q = info();
+    if (Math.abs(q.tau - 32) > 1e-6) errors.push('perp tau ' + q.tau);
+    if (Math.abs(q.lever - 0.8) > 1e-6) errors.push('perp lever ' + q.lever);
+    state.phi = Math.PI;
+    q = info();
+    if (Math.abs(q.tau) > 1e-6 || q.lever > 1e-6) errors.push('through hinge ' + q.tau + ' ' + q.lever);
+    state.phi = Math.PI / 6;
+    q = info();
+    const expect = 0.8 * 40 * Math.sin(Math.PI / 6);
+    if (Math.abs(q.tau - expect) > 1e-6) errors.push('30 deg ' + q.tau);
+    if (Math.abs(q.lever - 0.8 * 0.5) > 1e-6) errors.push('lever 30 ' + q.lever);
+    state.phi = -Math.PI / 2;
+    q = info();
+    if (!(q.tau < 0)) errors.push('sign');
+    state.L = 0.9; state.x = 0.78; state.F = 40; state.phi = Math.PI / 2;
+    return UI.reportCheck(errors);
+  }
+
+  UI.typeset(document);
+  UI.watchResize(document.getElementById('stage'), canvas, render);
+  const ok = selfCheck();
+  render();
+  window.__sim = {
+    id: 'door-torque',
+    ready: true,
+    ok: ok,
+    selfCheck: selfCheck,
+    set: (patch) => {
+      if (patch.x != null) state.x = patch.x;
+      if (patch.F != null) state.F = patch.F;
+      if (patch.phi != null) state.phi = patch.phi;
+      if (patch.deg != null) state.phi = patch.deg * Math.PI / 180;
+      if (patch.L != null) state.L = patch.L;
+      render();
+    },
+    snapshot: () => info(),
+  };
+})();
+</script>
+</body>
+</html>

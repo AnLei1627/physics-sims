@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>有質量的 Atwood 滑輪</title>
+<link rel="stylesheet" href="sim.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="title"><a class="back" href="./">第10堂</a>　有質量的滑輪<small>均勻圓盤 I = ½MR²</small></div>
+    <span class="seg" id="modeSeg">
+      <button type="button" data-mode="atwood" aria-pressed="true">Atwood 雙物</button>
+      <button type="button" data-mode="compare" aria-pressed="false">單繩：掛重 vs 拉力</button>
+    </span>
+    <button type="button" class="btn" id="btnPanel">⚙ 收起參數</button>
+    <button type="button" class="btn icon" id="btnTheme" title="切換深色／淺色">🌓</button>
+  </header>
+  <main class="stage" id="stage"><canvas id="cv" aria-label="有質量的滑輪"></canvas></main>
+  <div class="trans">
+    <button type="button" class="btn icon" id="btnReset" title="回到開始">⏮</button>
+    <button type="button" class="btn icon" id="btnBack">◀</button>
+    <button type="button" class="btn icon primary" id="btnPlay" title="播放／暫停（空白鍵）">▶</button>
+    <button type="button" class="btn icon" id="btnFwd">▶|</button>
+    <div class="scrub"><input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="時間"></div>
+    <span class="time" id="timeLab">t = 0.00 s</span>
+    <select id="speed" aria-label="播放速度">
+      <option value="0.25">0.25×</option>
+      <option value="0.5" selected>0.5×</option>
+      <option value="1">1×</option>
+      <option value="2">2×</option>
+    </select>
+  </div>
+  <aside class="panel">
+    <div class="panel-inner">
+      <section class="sec" id="blkAtwood">
+        <h3>Atwood：滑輪有質量</h3>
+        <div class="formula" data-tex="a=\dfrac{(m_2-m_1)g}{m_1+m_2+M/2}">a = (m₂−m₁)g / (m₁+m₂+M/2)</div>
+        <div class="formula" data-tex="T_1=m_1(g+a),\quad T_2=m_2(g-a)">T₁ = m₁(g+a)，T₂ = m₂(g−a)</div>
+        <div class="formula" data-tex="T_2-T_1=\tfrac12 Ma">T₂ − T₁ = ½ M a</div>
+        <p class="keyline">a 以 m₂ 向下為正。式子裡沒有 R：半徑只會改角加速度 α = a/R，不會改 a 和兩條張力。</p>
+      </section>
+      <section class="sec" id="blkCompare" hidden>
+        <h3>同一條繩，兩種施力</h3>
+        <div class="formula" data-tex="\text{掛 }mg:\ a=\dfrac{mg}{m+M/2}">掛上重量 mg：a = mg / (m + M/2)</div>
+        <div class="formula" data-tex="T=m(g-a)">掛著時 T = m(g − a)</div>
+        <div class="formula" data-tex="\text{拉力 }mg:\ T=mg,\ a=\dfrac{2mg}{M}">用固定力 mg 拉：T = mg，a = 2mg/M</div>
+        <div class="formula" data-tex="\alpha=\dfrac{2mg}{MR}">拉力的角加速度 α = 2mg/(MR)</div>
+        <p class="keyline">掛著物塊時，張力比 mg 小（物塊自己也要被加速），力矩比較小，α 比較小。兩種線加速度都不含 R。</p>
+      </section>
+      <section class="sec">
+        <h3>參數</h3>
+        <div class="param" id="rowM1">
+          <span class="lab">m₁（左側）</span>
+          <span class="val"><span data-for="m1">1.0</span> kg</span>
+          <input id="m1" type="range" min="0.2" max="6" step="0.1" value="1" aria-label="m1">
+        </div>
+        <div class="param" id="rowM2">
+          <span class="lab">m₂（右側）</span>
+          <span class="val"><span data-for="m2">2.0</span> kg</span>
+          <input id="m2" type="range" min="0.2" max="6" step="0.1" value="2" aria-label="m2">
+        </div>
+        <div class="param" id="rowM" hidden>
+          <span class="lab">m（重量 mg 的 m）</span>
+          <span class="val"><span data-for="m">1.0</span> kg</span>
+          <input id="m" type="range" min="0.2" max="6" step="0.1" value="1" aria-label="m">
+        </div>
+        <div class="param">
+          <span class="lab">滑輪 M</span>
+          <span class="val"><span data-for="M">2.0</span> kg</span>
+          <input id="M" type="range" min="0.4" max="10" step="0.1" value="2" aria-label="滑輪質量">
+        </div>
+        <div class="param">
+          <span class="lab">半徑 R</span>
+          <span class="val"><span data-for="R">0.10</span> m</span>
+          <input id="R" type="range" min="0.05" max="0.35" step="0.01" value="0.1" aria-label="半徑">
+        </div>
+      </section>
+      <section class="sec">
+        <h3>此刻</h3>
+        <div id="readout"></div>
+        <p class="keyline" id="rNote"></p>
+      </section>
+      <details class="keys"><summary>快捷鍵</summary>
+        <ul><li><kbd>空白</kbd> 播放／暫停</li><li><kbd>Home</kbd> 回到開始</li><li><kbd>P</kbd> 收起參數</li></ul>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="sim-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  const UI = SimUI;
+  const g = UI.G;
+  const canvas = document.getElementById('cv');
+  const state = { mode: 'atwood', m1: 1, m2: 2, m: 1, M: 2, R: 0.1, t: 0, speed: 0.5, playing: false };
+  let raf = 0, last = 0;
+
+  function atwood() {
+    const denom = state.m1 + state.m2 + state.M / 2;
+    const a = (state.m2 - state.m1) * g / denom;
+    const T1 = state.m1 * (g + a);
+    const T2 = state.m2 * (g - a);
+    return { a: a, T1: T1, T2: T2, alpha: a / state.R, diff: T2 - T1, half: 0.5 * state.M * a };
+  }
+  function hang() {
+    const a = state.m * g / (state.m + state.M / 2);
+    const T = state.m * (g - a);
+    return { a: a, T: T, alpha: a / state.R };
+  }
+  function pull() {
+    const T = state.m * g;
+    const a = 2 * state.m * g / state.M;
+    const alpha = a / state.R;
+    return { a: a, T: T, alpha: alpha };
+  }
+
+  function limits() {
+    if (state.mode === 'atwood') {
+      const a = atwood().a;
+      const S = 0.75;
+      const T = Math.abs(a) < 1e-4 ? 1.5 : Math.sqrt((2 * S) / Math.abs(a));
+      return { S: S, T: T, a: a };
+    }
+    const h = hang(), p = pull();
+    const S = 0.9;
+    const th = Math.sqrt((2 * S) / h.a);
+    const tp = Math.sqrt((2 * S) / p.a);
+    return { S: S, T: Math.max(th, tp), th: th, tp: tp };
+  }
+
+  function pause() {
+    state.playing = false;
+    cancelAnimationFrame(raf);
+    last = 0;
+  }
+  function play() {
+    const lim = limits();
+    if (state.t >= lim.T - 1e-3) state.t = 0;
+    state.playing = true;
+    last = 0;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+  function toggle() { state.playing ? pause() : play(); }
+  function tick(now) {
+    if (!state.playing) return;
+    if (last) {
+      state.t += Math.min(0.05, (now - last) / 1000) * state.speed;
+      if (state.t >= limits().T) { state.t = limits().T; pause(); render(); return; }
+    }
+    last = now;
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+  function seek(t) {
+    const lim = limits();
+    state.t = Math.max(0, Math.min(lim.T, t));
+    render();
+  }
+
+  function massBox(p, x, top, mass, label, color) {
+    const u = p.u;
+    const bw = (36 + mass * 7) * u;
+    const bh = (28 + mass * 8) * u;
+    p.roundRect(x - bw / 2, top, bw, bh, 5 * u, { fill: color, color: color });
+    p.text(x, top + bh / 2, label, { size: 13, weight: 700, color: '#fff', halo: false, align: 'center' });
+    return bh;
+  }
+
+  function drawPulley(p, cx, cy, Rpx, phi, color) {
+    const u = p.u;
+    p.circle(cx, cy, Rpx, { fill: p.pal.panel, color: color, width: 3 });
+    p.circle(cx, cy, Math.max(3 * u, Rpx * 0.18), { fill: color });
+    const tick = phi;
+    p.line(cx, cy, cx + Rpx * Math.sin(tick), cy + Rpx * Math.cos(tick), { color: color, width: 2.4 });
+    p.circle(cx + Rpx * Math.sin(tick), cy + Rpx * Math.cos(tick), 3.2 * u, { fill: color });
+  }
+
+  function drawAtwood(p) {
+    const model = atwood();
+    const lim = limits();
+    const s = 0.5 * model.a * state.t * state.t;
+    const sc = Math.max(-lim.S, Math.min(lim.S, s));
+    const u = p.u;
+    const travel = lim.S;
+    const need = state.R + 0.16 + travel * 2 + 0.42;
+    const ppm = Math.min((p.h * 0.8) / need, (p.w * 0.42) / (state.R * 2 + 0.9));
+    const Rpx = state.R * ppm;
+    const cx = p.w * 0.36;
+    const cy = 28 * u + Rpx + 8 * u;
+    p.line(cx - 70 * u, 16 * u, cx + 70 * u, 16 * u, { color: p.pal.ground, width: 4, cap: 'butt' });
+    p.line(cx, 16 * u, cx, cy - Rpx, { color: p.pal.ground, width: 2 });
+    drawPulley(p, cx, cy, Rpx, sc / state.R, p.pal.ink2);
+
+    const y0 = cy + Rpx + (0.12 + travel) * ppm;
+    const y1 = y0 - sc * ppm;
+    const y2 = y0 + sc * ppm;
+    const x1 = cx - Rpx;
+    const x2 = cx + Rpx;
+    p.line(x1, cy, x1, y1, { color: p.pal.ink, width: 1.6, cap: 'butt' });
+    p.line(x2, cy, x2, y2, { color: p.pal.ink, width: 1.6, cap: 'butt' });
+    // 跨過滑輪頂
+    p.ctx.beginPath();
+    p.ctx.arc(cx, cy, Rpx, Math.PI, 0, false);
+    p.ctx.strokeStyle = p.pal.ink;
+    p.ctx.lineWidth = 1.6 * u;
+    p.ctx.stroke();
+
+    massBox(p, x1, y1, state.m1, 'm₁', p.pal.a);
+    massBox(p, x2, y2, state.m2, 'm₂', p.pal.b);
+    p.text(x1 - 14 * u, y1 + 8 * u, 'T₁ ' + UI.fmt(model.T1, 2) + ' N', { size: 12, color: p.pal.a, align: 'right', weight: 650 });
+    p.text(x2 + 14 * u, y2 + 8 * u, 'T₂ ' + UI.fmt(model.T2, 2) + ' N', { size: 12, color: p.pal.b, align: 'left', weight: 650 });
+
+    const v = model.a * state.t;
+    if (Math.abs(v) > 0.15 && Math.abs(sc) < lim.S - 0.02) {
+      const len = Math.min(36, Math.abs(v) * 8) * u * Math.sign(model.a || 1);
+      if (model.a >= 0) {
+        p.arrow(x1 - 28 * u, y1 + 10 * u, x1 - 28 * u, y1 + 10 * u - Math.abs(len), { color: p.pal.a, width: 2 });
+        p.arrow(x2 + 28 * u, y2 + 16 * u, x2 + 28 * u, y2 + 16 * u + Math.abs(len), { color: p.pal.b, width: 2 });
+      } else {
+        p.arrow(x1 - 28 * u, y1 + 10 * u, x1 - 28 * u, y1 + 10 * u + Math.abs(len), { color: p.pal.a, width: 2 });
+        p.arrow(x2 + 28 * u, y2 + 16 * u, x2 + 28 * u, y2 + 16 * u - Math.abs(len), { color: p.pal.b, width: 2 });
+      }
+    }
+
+    const boxX = p.w * 0.62;
+    card(p, boxX, 24 * u, p.w - boxX - 16 * u, [
+      ['a', UI.fmt(model.a, 3) + ' m/s²'],
+      ['方向', Math.abs(model.a) < 1e-3 ? '平衡' : (model.a > 0 ? 'm₂ 下降' : 'm₁ 下降')],
+      ['T₁', UI.fmt(model.T1, 3) + ' N'],
+      ['T₂', UI.fmt(model.T2, 3) + ' N'],
+      ['T₂ − T₁', UI.fmt(model.diff, 3) + ' N'],
+      ['½ M a', UI.fmt(model.half, 3) + ' N'],
+      ['α = a/R', UI.fmt(model.alpha, 2) + ' rad/s²'],
+      ['R', UI.fmt(state.R, 2) + ' m（a 不變）'],
+    ]);
+  }
+
+  function card(p, x, y, w, rows) {
+    const u = p.u;
+    const rh = 22 * u;
+    const h = rows.length * rh + 14 * u;
+    p.ctx.fillStyle = p.pal.panel;
+    p.ctx.fillRect(x, y, w, h);
+    p.ctx.strokeStyle = p.pal.panelLine;
+    p.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    rows.forEach((row, i) => {
+      p.text(x + 8 * u, y + 12 * u + i * rh, row[0], { size: 12, color: p.pal.ink2, haloColor: p.pal.panel });
+      p.text(x + w - 8 * u, y + 12 * u + i * rh, row[1], { size: 12, color: p.pal.ink, align: 'right', weight: 650, haloColor: p.pal.panel });
+    });
+  }
+
+  function drawOneSided(p, box, title, model, sDrop, kind) {
+    const u = p.u;
+    const pal = p.pal;
+    const travel = limits().S;
+    const need = state.R + 0.25 + travel + 0.55;
+    const ppm = Math.min((box.h * 0.6) / need, (box.w * 0.48) / (state.R * 2 + 0.45));
+    const Rpx = state.R * ppm;
+    const cx = box.x + box.w * 0.46;
+    const cy = box.y + 40 * u + Rpx;
+    p.text(box.x + 10 * u, box.y + 16 * u, title, { size: 14, weight: 750, color: pal.ink });
+    p.line(cx - 48 * u, box.y + 28 * u, cx + 28 * u, box.y + 28 * u, { color: pal.ground, width: 3, cap: 'butt' });
+    p.line(cx, box.y + 28 * u, cx, cy - Rpx, { color: pal.ground, width: 2 });
+    drawPulley(p, cx, cy, Rpx, sDrop / state.R, pal.ink2);
+    const x = cx + Rpx;
+    const yEnd = cy + Rpx + (0.12 + sDrop) * ppm;
+    p.ctx.beginPath();
+    p.ctx.arc(cx, cy, Rpx, Math.PI, 2 * Math.PI, false);
+    p.ctx.strokeStyle = pal.ink;
+    p.ctx.lineWidth = 1.5 * u;
+    p.ctx.stroke();
+    p.line(x, cy, x, yEnd, { color: pal.ink, width: 1.5, cap: 'butt' });
+    if (kind === 'hang') {
+      massBox(p, x, yEnd, state.m, 'mg', pal.a);
+    } else {
+      p.arrow(x, yEnd, x, yEnd + 34 * u, { color: pal.b, width: 2.6, head: 10 });
+      p.roundRect(x - 12 * u, yEnd + 30 * u, 24 * u, 16 * u, 4 * u, { fill: pal.b });
+      p.text(x + 20 * u, yEnd + 18 * u, 'F = mg', { size: 13, color: pal.b, weight: 750 });
+    }
+    const lines = [
+      'a = ' + UI.fmt(model.a, 2) + ' m/s²',
+      'T = ' + UI.fmt(model.T, 2) + ' N',
+      'α = ' + UI.fmt(model.alpha, 1) + ' rad/s²',
+    ];
+    lines.forEach((sLine, i) => {
+      p.text(box.x + 12 * u, box.y + box.h - (46 - i * 16) * u, sLine, { size: 13, weight: 650, color: pal.ink });
+    });
+  }
+
+  function drawCompare(p) {
+    const h = hang(), pu = pull();
+    const S = limits().S;
+    const sh = Math.min(S, 0.5 * h.a * state.t * state.t);
+    const sp = Math.min(S, 0.5 * pu.a * state.t * state.t);
+    const mid = p.w / 2;
+    p.line(mid, 12 * p.u, mid, p.h - 12 * p.u, { color: p.pal.panelLine, width: 1 });
+    drawOneSided(p, { x: 0, y: 0, w: mid, h: p.h }, '掛上重量 mg 的物塊', h, sh, 'hang');
+    drawOneSided(p, { x: mid, y: 0, w: p.w - mid, h: p.h }, '用固定力 mg 拉繩', pu, sp, 'pull');
+  }
+
+  function fillReadout() {
+    const host = document.getElementById('readout');
+    const rNote = document.getElementById('rNote');
+    if (state.mode === 'atwood') {
+      const m = atwood();
+      const dir = Math.abs(m.a) < 1e-3 ? '兩邊一樣重，a = 0，T₁ = T₂。' : (m.a > 0 ? 'm₂ 較重，往下。' : 'm₁ 較重，往下。');
+      host.innerHTML = table([
+        ['a', UI.fmt(m.a, 3) + ' m/s²'],
+        ['T₁', UI.fmt(m.T1, 3) + ' N'],
+        ['T₂', UI.fmt(m.T2, 3) + ' N'],
+        ['T₂ − T₁', UI.fmt(m.diff, 3) + ' N'],
+        ['½ M a', UI.fmt(m.half, 3) + ' N'],
+        ['α', UI.fmt(m.alpha, 2) + ' rad/s²'],
+      ]);
+      const a2 = m.a;
+      rNote.textContent = dir + ' 現在 R = ' + UI.fmt(state.R, 2) + ' m，a = ' + UI.fmt(a2, 3) + ' m/s²。把 R 調成別的值，a、T₁、T₂ 都不動，α 變成 ' + UI.fmt(a2 / state.R, 2) + '。若 R 改成兩倍，α 會變成現在的一半。';
+    } else {
+      const h = hang(), pu = pull();
+      host.innerHTML = table([
+        ['掛重 a', UI.fmt(h.a, 3) + ' m/s²'],
+        ['掛重 T', UI.fmt(h.T, 3) + ' N'],
+        ['掛重 α', UI.fmt(h.alpha, 2) + ' rad/s²'],
+        ['拉力 a', UI.fmt(pu.a, 3) + ' m/s²'],
+        ['拉力 T', UI.fmt(pu.T, 3) + ' N'],
+        ['拉力 α', UI.fmt(pu.alpha, 2) + ' rad/s²'],
+        ['α拉 / α掛', UI.fmt(pu.alpha / h.alpha, 3)],
+      ]);
+      rNote.textContent = '拉力的張力是完整的 mg = ' + UI.fmt(state.m * g, 2) + ' N；掛著時張力只有 ' + UI.fmt(h.T, 2) + ' N。所以拉的時候轉得比較快。兩種 a 都跟 R 無關，α 跟 R 成反比。';
+    }
+  }
+
+  function table(rows) {
+    return '<table class="ro"><tbody>' + rows.map((r) => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table>';
+  }
+
+  function render() {
+    const p = UI.beginFrame(canvas);
+    if (!p) return;
+    if (state.mode === 'atwood') drawAtwood(p);
+    else drawCompare(p);
+    const lim = limits();
+    const scrub = document.getElementById('scrub');
+    if (document.activeElement !== scrub) scrub.value = String(Math.round((state.t / lim.T) * 1000));
+    document.getElementById('timeLab').textContent = 't = ' + UI.fmt(state.t, 2) + ' / ' + UI.fmt(lim.T, 2) + ' s';
+    document.getElementById('btnPlay').textContent = state.playing ? '⏸' : '▶';
+    fillReadout();
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    document.querySelectorAll('#modeSeg button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    });
+    document.getElementById('blkAtwood').hidden = mode !== 'atwood';
+    document.getElementById('blkCompare').hidden = mode !== 'compare';
+    document.getElementById('rowM1').hidden = mode !== 'atwood';
+    document.getElementById('rowM2').hidden = mode !== 'atwood';
+    document.getElementById('rowM').hidden = mode !== 'compare';
+    pause();
+    state.t = 0;
+    render();
+  }
+
+  document.getElementById('modeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) setMode(b.dataset.mode);
+  });
+  UI.bindRange('m1', (v) => { state.m1 = v; pause(); state.t = 0; render(); });
+  UI.bindRange('m2', (v) => { state.m2 = v; pause(); state.t = 0; render(); });
+  UI.bindRange('m', (v) => { state.m = v; pause(); state.t = 0; render(); });
+  UI.bindRange('M', (v) => { state.M = v; pause(); state.t = 0; render(); });
+  UI.bindRange('R', (v) => { state.R = v; render(); });
+  document.getElementById('speed').addEventListener('change', (e) => { state.speed = parseFloat(e.target.value); });
+  document.getElementById('btnPlay').addEventListener('click', toggle);
+  document.getElementById('btnReset').addEventListener('click', () => { pause(); seek(0); });
+  document.getElementById('btnBack').addEventListener('click', () => { pause(); seek(state.t - 0.05); });
+  document.getElementById('btnFwd').addEventListener('click', () => { pause(); seek(state.t + 0.05); });
+  document.getElementById('scrub').addEventListener('input', (e) => { pause(); seek((e.target.value / 1000) * limits().T); });
+  document.getElementById('btnTheme').addEventListener('click', () => { UI.cycleTheme(); render(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.getAttribute('data-theme')) render(); });
+  UI.wirePanel(document.getElementById('btnPanel'), document.getElementById('app'));
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.code === 'Home') { pause(); seek(0); }
+    else if (e.key === 'p' || e.key === 'P') document.getElementById('btnPanel').click();
+  });
+
+  function selfCheck() {
+    const errors = [];
+    const saved = Object.assign({}, state);
+    state.m1 = 1; state.m2 = 2; state.M = 2; state.R = 0.1; state.m = 1;
+    const m = atwood();
+    if (Math.abs(m.a - g / 4) > 1e-9) errors.push('a ' + m.a);
+    if (Math.abs(m.diff - m.half) > 1e-9) errors.push('tension diff ' + m.diff + ' vs ' + m.half);
+    if (Math.abs(m.T1 - 1 * (g + m.a)) > 1e-9) errors.push('T1');
+    if (Math.abs(m.T2 - 2 * (g - m.a)) > 1e-9) errors.push('T2');
+    state.R = 0.3;
+    const m2 = atwood();
+    if (Math.abs(m2.a - m.a) > 1e-12) errors.push('R changed a');
+    if (Math.abs(m2.alpha - m.a / 0.3) > 1e-9) errors.push('alpha');
+    state.R = 0.1;
+    const h = hang();
+    if (Math.abs(h.a - g / 2) > 1e-9) errors.push('hang a ' + h.a);
+    if (Math.abs(h.T - state.m * (g - h.a)) > 1e-9) errors.push('hang T');
+    const pu = pull();
+    if (Math.abs(pu.a - g) > 1e-9) errors.push('pull a ' + pu.a);
+    if (Math.abs(pu.T - g) > 1e-9) errors.push('pull T');
+    if (Math.abs(pu.alpha - 2 * g / (state.M * state.R)) > 1e-9) errors.push('pull alpha');
+    if (!(pu.alpha > h.alpha)) errors.push('alpha compare');
+    Object.assign(state, saved);
+    return UI.reportCheck(errors);
+  }
+
+  UI.typeset(document);
+  UI.watchResize(document.getElementById('stage'), canvas, render);
+  const ok = selfCheck();
+  window.__sim = {
+    id: 'massive-atwood',
+    ready: true,
+    ok: ok,
+    selfCheck: selfCheck,
+    setMode: setMode,
+    seek: (t) => { pause(); seek(t); },
+    set: (patch) => { Object.assign(state, patch); pause(); render(); },
+    snapshot: () => ({ mode: state.mode, atwood: atwood(), hang: hang(), pull: pull(), t: state.t, R: state.R }),
+  };
+})();
+</script>
+</body>
+</html>

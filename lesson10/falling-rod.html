@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>細棒與硬幣</title>
+<link rel="stylesheet" href="sim.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="title"><a class="back" href="./">第10堂</a>　細棒與硬幣<small>繞一端，由水平釋放</small></div>
+    <button type="button" class="btn" id="btnPanel" aria-pressed="false">⚙ 收起參數</button>
+    <button type="button" class="btn icon" id="btnTheme" title="切換深色／淺色">🌓</button>
+  </header>
+  <main class="stage" id="stage"><canvas id="cv" aria-label="細棒落下與硬幣"></canvas></main>
+  <div class="trans">
+    <button type="button" class="btn icon" id="btnReset" title="回到開始（Home）">⏮</button>
+    <button type="button" class="btn icon" id="btnBack" title="倒退">◀</button>
+    <button type="button" class="btn icon primary" id="btnPlay" title="播放／暫停（空白鍵）">▶</button>
+    <button type="button" class="btn icon" id="btnFwd" title="前進">▶|</button>
+    <div class="scrub"><input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="時間"></div>
+    <span class="time" id="timeLab">t = 0.00 s</span>
+    <select id="speed" aria-label="播放速度">
+      <option value="0.25">0.25×</option>
+      <option value="0.5" selected>0.5×</option>
+      <option value="1">1×</option>
+      <option value="2">2×</option>
+    </select>
+  </div>
+  <aside class="panel">
+    <div class="panel-inner">
+      <section class="sec">
+        <h3>這一頁在看什麼</h3>
+        <div class="keyline">均勻細棒一端當轉軸，從水平靜止放開。桿端的硬幣同時自由落下。一放開，桿端向下的加速度是 <strong>3g/2</strong>，比硬幣的 g 大，所以硬幣立刻被拋在後面。</div>
+        <div class="formula" data-tex="I_{\text{end}}=\frac13 mL^{2},\quad \tau=mg\frac{L}{2}">I_end = ⅓mL²，水平時 τ = mgL/2</div>
+        <div class="formula" data-tex="\alpha=\frac{3g}{2L},\quad a_{\text{tip}}=\frac{3g}{2}">α = 3g/(2L)，桿端 a = 3g/2</div>
+      </section>
+      <section class="sec">
+        <h3>參數</h3>
+        <div class="param">
+          <span class="lab">棒長 L</span>
+          <span class="val"><span data-for="L">1.00</span> m</span>
+          <input id="L" type="range" min="0.4" max="2" step="0.05" value="1" aria-label="棒長">
+        </div>
+        <p class="keyline">g = 9.80 m/s²。棒的質量會在式子裡消掉。</p>
+      </section>
+      <section class="sec">
+        <h3>此刻</h3>
+        <table class="ro">
+          <tbody>
+            <tr><td>桿端向下加速度</td><td id="oA">—</td></tr>
+            <tr><td>硬幣加速度</td><td id="oAc">g</td></tr>
+            <tr><td>桿端速率 v</td><td id="oV">—</td></tr>
+            <tr><td>√(2gL)</td><td id="oRef">—</td></tr>
+            <tr><td>v / √(2gL)</td><td id="oRatio">—</td></tr>
+            <tr id="row23"><td>v(2L/3)</td><td id="o23">—</td></tr>
+            <tr id="rowff"><td>√(2gh)，h = (2L/3) sinθ</td><td id="oFF">—</td></tr>
+          </tbody>
+        </table>
+        <ul class="notes">
+          <li id="noteSep"></li>
+          <li>綠點 x = 2L/3 的<strong>速率</strong>始終等於從同一垂直距離自由落下的速率。比的是速率，不是位置：這一點沿著圓弧走。</li>
+          <li>鉛直時桿端速率是 √(3gL)，等於 √(2gL) 的 √(3/2) ≈ 1.22 倍。右圖橘線是 √(2gL)。</li>
+        </ul>
+        <div class="formula" data-tex="v(x)=\sqrt{3gx\sin\theta/L},\quad v_{\text{ff}}=\sqrt{2gh}">v(x) = √(3gx sinθ / L)，自由落體 √(2gh)</div>
+        <div class="formula" data-tex="h=x\sin\theta,\quad x=\dfrac{2L}{3}\ \text{時兩者相等}">h = x sinθ，在 x = 2L/3 時速率相等</div>
+      </section>
+      <details class="keys"><summary>快捷鍵</summary>
+        <ul><li><kbd>空白</kbd> 播放／暫停</li><li><kbd>←</kbd> <kbd>→</kbd> 逐格</li><li><kbd>Home</kbd> 回到開始</li><li><kbd>P</kbd> 收起參數</li></ul>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="sim-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  const UI = SimUI;
+  const g = UI.G;
+  const canvas = document.getElementById('cv');
+  const stage = document.getElementById('stage');
+
+  const state = { L: 1, t: 0, speed: 0.5, playing: false };
+  let frames = [];
+  let dt = 1 / 500;
+  let raf = 0;
+  let last = 0;
+
+  function tipDown(theta, omega, L) {
+    const alpha = (3 * g / (2 * L)) * Math.cos(theta);
+    return L * Math.cos(theta) * alpha - L * Math.sin(theta) * omega * omega;
+  }
+
+  function snapshot(t, theta, omega, L) {
+    const x23 = (2 / 3) * L;
+    const h = x23 * Math.sin(theta);
+    const v23 = x23 * omega;
+    const vff = Math.sqrt(Math.max(0, 2 * g * h));
+    return {
+      t: t,
+      theta: theta,
+      omega: omega,
+      tip: { x: L * Math.cos(theta), y: -L * Math.sin(theta) },
+      coin: { x: L, y: -0.5 * g * t * t },
+      p23: { x: x23 * Math.cos(theta), y: -x23 * Math.sin(theta) },
+      vTip: L * omega,
+      v23: v23,
+      vff: vff,
+      aDown: tipDown(theta, omega, L),
+      ref: Math.sqrt(2 * g * L),
+    };
+  }
+
+  function integrate(L) {
+    const h = 1 / 800;
+    const out = [];
+    let theta = 0, omega = 0, t = 0;
+    out.push(snapshot(0, 0, 0, L));
+    let guard = 0;
+    while (theta < Math.PI / 2 - 1e-4 && t < 8 && guard < 20000) {
+      const alpha = (3 * g / (2 * L)) * Math.cos(theta);
+      omega += alpha * h;
+      theta += omega * h;
+      t += h;
+      if (theta >= Math.PI / 2) {
+        theta = Math.PI / 2;
+        omega = Math.sqrt(3 * g / L);
+      } else if (theta > 1e-7) {
+        omega = Math.sqrt(3 * g * Math.sin(theta) / L);
+      }
+      if (guard % 2 === 0) out.push(snapshot(t, theta, omega, L));
+      guard++;
+    }
+    dt = out.length > 1 ? out[1].t - out[0].t : h;
+    return out;
+  }
+
+  function rebuild() {
+    frames = integrate(state.L);
+    state.t = 0;
+    render();
+  }
+
+  function frameAt(t) {
+    if (!frames.length) return null;
+    if (t <= 0) return frames[0];
+    const lastF = frames[frames.length - 1];
+    if (t >= lastF.t) return lastF;
+    const i = Math.min(frames.length - 2, Math.max(0, Math.floor(t / dt)));
+    const a = frames[i], b = frames[i + 1];
+    const u = (b.t - a.t) > 0 ? (t - a.t) / (b.t - a.t) : 0;
+    const lerp = (p, q) => p + (q - p) * u;
+    return {
+      t: t,
+      theta: lerp(a.theta, b.theta),
+      omega: lerp(a.omega, b.omega),
+      tip: { x: lerp(a.tip.x, b.tip.x), y: lerp(a.tip.y, b.tip.y) },
+      coin: { x: a.coin.x, y: -0.5 * g * t * t },
+      p23: { x: lerp(a.p23.x, b.p23.x), y: lerp(a.p23.y, b.p23.y) },
+      vTip: lerp(a.vTip, b.vTip),
+      v23: lerp(a.v23, b.v23),
+      vff: lerp(a.vff, b.vff),
+      aDown: lerp(a.aDown, b.aDown),
+      ref: a.ref,
+    };
+  }
+
+  function duration() { return frames.length ? frames[frames.length - 1].t : 1; }
+
+  function mapper(area, bounds) {
+    const pad = 28 * Math.max(0.6, area.w / 520);
+    const bw = Math.max(1e-6, bounds.x1 - bounds.x0);
+    const bh = Math.max(1e-6, bounds.y1 - bounds.y0);
+    const s = Math.min((area.w - 2 * pad) / bw, (area.h - 2 * pad) / bh);
+    const cx = (bounds.x0 + bounds.x1) / 2;
+    const cy = (bounds.y0 + bounds.y1) / 2;
+    const ox = area.x + area.w / 2;
+    const oy = area.y + area.h / 2;
+    return {
+      s: s,
+      X: (x) => ox + (x - cx) * s,
+      Y: (y) => oy - (y - cy) * s,
+    };
+  }
+
+  function drawScene(p, area, f, opts) {
+    const L = state.L;
+    const bounds = opts.bounds;
+    const map = mapper(area, bounds);
+    const ctx = p.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(area.x, area.y, area.w, area.h);
+    ctx.clip();
+    ctx.fillStyle = p.pal.bg;
+    ctx.fillRect(area.x, area.y, area.w, area.h);
+
+    const X = map.X, Y = map.Y;
+    const u = p.u;
+
+    if (!opts.zoom) {
+      ctx.globalAlpha = 0.9;
+      p.line(X(-0.4 * L), Y(0), X(1.15 * L), Y(0), { color: p.pal.grid2, width: 1, dash: [4, 4] });
+      p.line(X(L), Y(0.2 * L), X(L), Y(-1.25 * L), { color: p.pal.b, width: 1, dash: [2, 4] });
+      ctx.globalAlpha = 1;
+      p.text(X(-0.05 * L), Y(0.08 * L), '釋放高度', { size: 11, color: p.pal.muted, align: 'left' });
+      p.text(X(L), Y(0.16 * L), '硬幣直線落下', { size: 11, color: p.pal.b, align: 'center', weight: 650 });
+      // 牆與轉軸
+      const wallX = X(0);
+      ctx.fillStyle = p.pal.grid;
+      ctx.fillRect(area.x, area.y, Math.max(0, wallX - area.x), area.h);
+      p.line(wallX, area.y + 8, wallX, area.y + area.h - 8, { color: p.pal.ground, width: 3, cap: 'butt' });
+    }
+
+    // 軌跡
+    const step = Math.max(1, Math.floor(frames.length / 80));
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < frames.length; i += step) {
+      if (frames[i].t > f.t + 1e-6) break;
+      const q = frames[i].tip;
+      const px = X(q.x), py = Y(q.y);
+      if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+    }
+    if (started) {
+      ctx.strokeStyle = p.pal.a;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = (opts.zoom ? 1.4 : 2) * u;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.beginPath();
+    started = false;
+    for (let i = 0; i < frames.length; i += step) {
+      if (frames[i].t > f.t + 1e-6) break;
+      const q = frames[i].coin;
+      const px = X(q.x), py = Y(q.y);
+      if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+    }
+    if (started) {
+      ctx.strokeStyle = p.pal.b;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = (opts.zoom ? 1.4 : 2) * u;
+      ctx.setLineDash([4 * u, 3 * u]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // x = 2L/3 的鉛直線
+    if (!opts.zoom) {
+      p.line(X((2 / 3) * L), Y(0.25 * L), X((2 / 3) * L), Y(-1.25 * L), { color: p.pal.c, width: 1, dash: [3, 4] });
+      p.text(X((2 / 3) * L), Y(0.28 * L), 'x = 2L/3', { size: 12, color: p.pal.c, align: 'center', weight: 650 });
+    }
+
+    // 棒
+    p.line(X(0), Y(0), X(f.tip.x), Y(f.tip.y), { color: p.pal.a, width: opts.zoom ? 4 : 7 });
+    // 質心
+    const cmx = 0.5 * f.tip.x, cmy = 0.5 * f.tip.y;
+    p.circle(X(cmx), Y(cmy), (opts.zoom ? 3 : 4.5) * u, { fill: p.pal.bg, color: p.pal.a, width: 1.6 });
+    if (!opts.zoom) p.text(X(cmx) + 8 * u, Y(cmy) - 10 * u, '質心 L/2', { size: 11, color: p.pal.ink2 });
+
+    // 2L/3
+    p.circle(X(f.p23.x), Y(f.p23.y), (opts.zoom ? 4 : 6) * u, { fill: p.pal.c, color: p.pal.bg, width: 1.5 });
+    if (!opts.zoom) p.text(X(f.p23.x) + 8 * u, Y(f.p23.y) + 12 * u, '2L/3', { size: 12, color: p.pal.c, weight: 700 });
+
+    // 轉軸
+    p.circle(X(0), Y(0), (opts.zoom ? 4 : 7) * u, { fill: p.pal.ink, color: p.pal.ink, width: 1 });
+    if (!opts.zoom) p.text(X(0) + 10 * u, Y(0) + 14 * u, '轉軸', { size: 12, color: p.pal.ink2 });
+
+    // 硬幣
+    const cr = (opts.zoom ? 8 : 13) * u;
+    p.circle(X(f.coin.x), Y(f.coin.y), cr, { fill: p.pal.gold, color: p.pal.b, width: 2 });
+    p.circle(X(f.coin.x), Y(f.coin.y), cr * 0.55, { color: 'rgba(255,255,255,0.75)', width: 1.2 });
+    p.text(X(f.coin.x) + cr + 4 * u, Y(f.coin.y) - cr, '硬幣', { size: opts.zoom ? 11 : 13, color: p.pal.b, weight: 700 });
+
+    if (opts.zoom) {
+      // 放大窗裡畫加速度箭頭（只在還幾乎水平時）
+      if (f.theta < 0.35) {
+        const ax = X(f.tip.x) + 16 * u;
+        const ay = Y(Math.max(f.tip.y, f.coin.y));
+        const unit = 28 * u;
+        p.arrow(ax, ay, ax, ay + 1.5 * unit, { color: p.pal.a, width: 2.2, head: 8 });
+        p.text(ax + 6 * u, ay + 1.5 * unit, '3g/2', { size: 12, color: p.pal.a, weight: 700, align: 'left' });
+        p.arrow(ax + 28 * u, ay, ax + 28 * u, ay + 1 * unit, { color: p.pal.b, width: 2.2, head: 8 });
+        p.text(ax + 34 * u, ay + unit, 'g', { size: 12, color: p.pal.b, weight: 700 });
+      }
+      const dy = f.coin.y - f.tip.y;
+      p.text(area.x + 8 * u, area.y + area.h - 12 * u, 'Δy = ' + UI.fmt(dy * 100, 1) + ' cm（正：硬幣還在上面）', { size: 11, color: p.pal.ink2, halo: true });
+    }
+
+    ctx.restore();
+    if (!opts.zoom) {
+      ctx.save();
+      ctx.strokeStyle = p.pal.panelLine;
+      ctx.strokeRect(area.x + 0.5, area.y + 0.5, area.w - 1, area.h - 1);
+      ctx.restore();
+    }
+  }
+
+  function drawGraph(p, area, f) {
+    const ctx = p.ctx;
+    const pal = p.pal;
+    const u = p.u;
+    ctx.save();
+    ctx.fillStyle = pal.panel;
+    ctx.fillRect(area.x, area.y, area.w, area.h);
+    ctx.strokeStyle = pal.panelLine;
+    ctx.strokeRect(area.x + 0.5, area.y + 0.5, area.w - 1, area.h - 1);
+    p.text(area.x + 10 * u, area.y + 16 * u, '速率', { size: 13, weight: 700, color: pal.ink, haloColor: pal.panel });
+
+    const padL = 36 * u, padR = 10 * u, padT = 36 * u, padB = 26 * u;
+    const plot = { x: area.x + padL, y: area.y + padT, w: area.w - padL - padR, h: area.h - padT - padB };
+    const T = duration();
+    const vmax = Math.max(f.ref, Math.sqrt(3 * g * state.L)) * 1.08;
+    const X = (t) => plot.x + (t / T) * plot.w;
+    const Y = (v) => plot.y + plot.h - (v / vmax) * plot.h;
+
+    ctx.beginPath();
+    ctx.rect(plot.x, plot.y, plot.w, plot.h);
+    ctx.clip();
+
+    // √(2gL)
+    p.line(plot.x, Y(f.ref), plot.x + plot.w, Y(f.ref), { color: pal.b, width: 1.6, dash: [5, 4] });
+    // 2L/3 與自由落體（重合）
+    ctx.beginPath();
+    frames.forEach((fr, i) => {
+      const x = X(fr.t), y = Y(fr.v23);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.strokeStyle = pal.c;
+    ctx.lineWidth = 2.4 * u;
+    ctx.stroke();
+    // 桿端
+    ctx.beginPath();
+    frames.forEach((fr, i) => {
+      const x = X(fr.t), y = Y(fr.vTip);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.strokeStyle = pal.a;
+    ctx.lineWidth = 2.2 * u;
+    ctx.stroke();
+    ctx.restore();
+
+    // 目前時刻
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(plot.x, plot.y, plot.w, plot.h);
+    ctx.clip();
+    p.line(X(f.t), plot.y, X(f.t), plot.y + plot.h, { color: pal.ink, width: 1, dash: [2, 2] });
+    p.circle(X(f.t), Y(f.vTip), 3.5 * u, { fill: pal.a });
+    p.circle(X(f.t), Y(f.v23), 3.5 * u, { fill: pal.c });
+    ctx.restore();
+
+    p.text(plot.x, plot.y + plot.h + 12 * u, 't', { size: 11, color: pal.muted, haloColor: pal.panel });
+    p.text(area.x + 8 * u, plot.y + 8 * u, 'v', { size: 11, color: pal.muted, haloColor: pal.panel });
+
+    const ly = area.y + 16 * u;
+    p.line(area.x + area.w - 118 * u, ly, area.x + area.w - 96 * u, ly, { color: pal.a, width: 2.4 });
+    p.text(area.x + area.w - 92 * u, ly, '桿端', { size: 11, color: pal.a, haloColor: pal.panel, weight: 650 });
+    p.line(area.x + area.w - 118 * u, ly + 14 * u, area.x + area.w - 96 * u, ly + 14 * u, { color: pal.c, width: 2.4 });
+    p.text(area.x + area.w - 92 * u, ly + 14 * u, '2L/3 = √(2gh)', { size: 11, color: pal.c, haloColor: pal.panel, weight: 650 });
+    p.line(area.x + 78 * u, ly, area.x + 100 * u, ly, { color: pal.b, width: 1.6, dash: [4, 3] });
+    p.text(area.x + 104 * u, ly, '√(2gL)', { size: 11, color: pal.b, haloColor: pal.panel, weight: 650 });
+  }
+
+  function render() {
+    const p = UI.beginFrame(canvas);
+    if (!p) return;
+    const f = frameAt(state.t);
+    if (!f) return;
+    const w = p.w, h = p.h, u = p.u;
+    const gap = 8 * u;
+    const right = Math.max(210, w * 0.36);
+    const scene = { x: gap, y: gap, w: w - right - 3 * gap, h: h - 2 * gap };
+    const magH = (h - 3 * gap) * 0.42;
+    const mag = { x: scene.x + scene.w + gap, y: gap, w: right, h: magH };
+    const graph = { x: mag.x, y: mag.y + mag.h + gap, w: right, h: h - mag.y - mag.h - 2 * gap };
+
+    p.text(scene.x + 4 * u, scene.y + 8 * u, '細棒繞一端落下，硬幣從桿端自由下落', { size: 13, weight: 650, color: p.pal.ink2 });
+
+    const L = state.L;
+    drawScene(p, { x: scene.x, y: scene.y + 16 * u, w: scene.w, h: scene.h - 16 * u }, f, {
+      zoom: false,
+      bounds: { x0: -0.42 * L, x1: 1.22 * L, y0: -1.32 * L, y1: 0.42 * L },
+    });
+
+    // 放大窗
+    const ctx = p.ctx;
+    ctx.save();
+    ctx.fillStyle = p.pal.panel;
+    ctx.fillRect(mag.x, mag.y, mag.w, mag.h);
+    p.text(mag.x + 8 * u, mag.y + 13 * u, '桿端放大', { size: 12, weight: 700, color: p.pal.ink, haloColor: p.pal.panel });
+    const focus = {
+      x: (f.tip.x + f.coin.x) / 2,
+      y: (f.tip.y + f.coin.y) / 2,
+    };
+    const dx = Math.abs(f.tip.x - f.coin.x);
+    const dy = Math.abs(f.tip.y - f.coin.y);
+    const pad = 0.05 * L;
+    const halfY = Math.max(0.08 * L, dy * 0.62 + pad);
+    const halfX = Math.max(halfY * 1.15, dx * 0.62 + pad);
+    drawScene(p, { x: mag.x + 4, y: mag.y + 22 * u, w: mag.w - 8, h: mag.h - 28 * u }, f, {
+      zoom: true,
+      bounds: { x0: focus.x - halfX, x1: focus.x + halfX, y0: focus.y - halfY, y1: focus.y + halfY },
+    });
+    ctx.strokeStyle = p.pal.panelLine;
+    ctx.strokeRect(mag.x + 0.5, mag.y + 0.5, mag.w - 1, mag.h - 1);
+    ctx.restore();
+
+    drawGraph(p, graph, f);
+
+    // 開場一句話壓在畫面上，收起面板也看得到
+    if (f.theta < 0.18) {
+      p.text(scene.x + 8 * u, scene.y + scene.h - 8 * u, '一放開：桿端向下 a = 3g/2 > g', { size: 14, weight: 750, color: p.pal.warn });
+    }
+
+    const T = duration();
+    const scrub = document.getElementById('scrub');
+    if (document.activeElement !== scrub) scrub.value = String(Math.round((f.t / T) * 1000));
+    document.getElementById('timeLab').textContent = 't = ' + UI.fmt(f.t, 2) + ' / ' + UI.fmt(T, 2) + ' s';
+    document.getElementById('oA').textContent = UI.fmt(f.aDown / g, 2) + ' g';
+    document.getElementById('oAc').textContent = '1.00 g';
+    document.getElementById('oV').textContent = UI.fmt(f.vTip, 2) + ' m/s';
+    document.getElementById('oRef').textContent = UI.fmt(f.ref, 2) + ' m/s';
+    document.getElementById('oRatio').textContent = UI.fmt(f.ref > 0 ? f.vTip / f.ref : 0, 3);
+    document.getElementById('o23').textContent = UI.fmt(f.v23, 3) + ' m/s';
+    document.getElementById('oFF').textContent = UI.fmt(f.vff, 3) + ' m/s';
+    const match = Math.abs(f.v23 - f.vff) <= 0.01 * Math.max(0.05, f.vff);
+    document.getElementById('row23').className = match ? 'ok' : '';
+    document.getElementById('rowff').className = match ? 'ok' : '';
+    const lead = f.coin.y - f.tip.y;
+    const note = document.getElementById('noteSep');
+    if (f.t < 1e-4) {
+      note.textContent = '還沒放開。桿端和硬幣在同一點，但桿端的向下加速度已經是 3g/2。';
+      note.className = 'warn';
+    } else if (lead > 0) {
+      note.textContent = '桿端比硬幣低了 ' + UI.fmt(lead * 100, 1) + ' cm。硬幣只以 g 下落，追不上圓弧上的桿端。';
+      note.className = 'warn';
+    } else {
+      note.textContent = '棒快到鉛直、桿端改往轉軸收。硬幣仍沿原來的鉛直線掉，兩者已經分開。';
+      note.className = '';
+    }
+    document.getElementById('btnPlay').textContent = state.playing ? '⏸' : '▶';
+  }
+
+  function pause() {
+    state.playing = false;
+    cancelAnimationFrame(raf);
+    last = 0;
+    const b = document.getElementById('btnPlay');
+    if (b) b.textContent = '▶';
+  }
+  function play() {
+    if (state.t >= duration() - 1e-4) state.t = 0;
+    state.playing = true;
+    last = 0;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+  function toggle() { state.playing ? pause() : play(); }
+  function tick(now) {
+    if (!state.playing) return;
+    if (last) {
+      state.t += Math.min(0.05, (now - last) / 1000) * state.speed;
+      if (state.t >= duration()) { state.t = duration(); pause(); render(); return; }
+    }
+    last = now;
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+  function seek(t) {
+    state.t = Math.max(0, Math.min(duration(), t));
+    render();
+  }
+
+  UI.bindRange('L', (v) => { pause(); state.L = v; rebuild(); });
+  document.getElementById('speed').addEventListener('change', (e) => { state.speed = parseFloat(e.target.value); });
+  document.getElementById('btnPlay').addEventListener('click', toggle);
+  document.getElementById('btnReset').addEventListener('click', () => { pause(); seek(0); });
+  document.getElementById('btnBack').addEventListener('click', () => { pause(); seek(state.t - 0.03); });
+  document.getElementById('btnFwd').addEventListener('click', () => { pause(); seek(state.t + 0.03); });
+  document.getElementById('scrub').addEventListener('input', (e) => {
+    pause();
+    seek((e.target.value / 1000) * duration());
+  });
+  document.getElementById('btnTheme').addEventListener('click', () => { UI.cycleTheme(); render(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.getAttribute('data-theme')) render(); });
+  UI.wirePanel(document.getElementById('btnPanel'), document.getElementById('app'));
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.code === 'Home') { e.preventDefault(); pause(); seek(0); }
+    else if (e.code === 'ArrowRight') { e.preventDefault(); pause(); seek(state.t + 0.03); }
+    else if (e.code === 'ArrowLeft') { e.preventDefault(); pause(); seek(state.t - 0.03); }
+    else if (e.key === 'p' || e.key === 'P') document.getElementById('btnPanel').click();
+  });
+
+  function selfCheck() {
+    const errors = [];
+    const L = 1;
+    const a0 = tipDown(0, 0, L);
+    if (Math.abs(a0 - 1.5 * g) > 1e-9) errors.push('a0=' + a0);
+    const fr = integrate(L);
+    const mid = fr[Math.floor(fr.length * 0.45)];
+    if (Math.abs(mid.v23 - mid.vff) > 2e-3) errors.push('v23 mismatch ' + mid.v23 + ' vs ' + mid.vff);
+    const end = fr[fr.length - 1];
+    const expect = Math.sqrt(3 * g * L);
+    if (Math.abs(end.vTip - expect) > 1e-2) errors.push('vTip end ' + end.vTip + ' vs ' + expect);
+    if (end.coin.x !== L) errors.push('coin x');
+    if (!(end.tip.y < -0.5)) errors.push('tip did not fall');
+    // 早期桿端垂直方向領先硬幣
+    const early = fr.find((q) => q.t > 0.12);
+    if (!early || !(early.tip.y < early.coin.y - 0.005)) errors.push('no early separation');
+    const ratio = end.vTip / Math.sqrt(2 * g * L);
+    if (Math.abs(ratio - Math.sqrt(1.5)) > 1e-2) errors.push('ratio ' + ratio);
+    return UI.reportCheck(errors);
+  }
+
+  UI.typeset(document);
+  UI.watchResize(stage, canvas, render);
+  rebuild();
+  const ok = selfCheck();
+  window.__sim = {
+    id: 'falling-rod',
+    ready: true,
+    selfCheck: selfCheck,
+    ok: ok,
+    seek: (t) => { pause(); seek(t); },
+    play: play,
+    pause: pause,
+    reset: () => { pause(); seek(0); },
+    setL: (L) => { pause(); state.L = L; document.getElementById('L').value = String(L); rebuild(); },
+    snapshot: () => frameAt(state.t),
+  };
+})();
+</script>
+</body>
+</html>

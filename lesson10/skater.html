@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滑冰者收臂</title>
+<link rel="stylesheet" href="sim.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="title"><a class="back" href="./">第10堂</a>　滑冰者收臂<small>L = Iω 守恆</small></div>
+    <button type="button" class="btn" id="btnIn">收到底</button>
+    <button type="button" class="btn" id="btnOut">伸直</button>
+    <button type="button" class="btn" id="btnPush">輕推（外力矩）</button>
+    <button type="button" class="btn" id="btnReset">重設</button>
+    <button type="button" class="btn" id="btnPanel">⚙ 收起參數</button>
+    <button type="button" class="btn icon" id="btnTheme" title="切換深色／淺色">🌓</button>
+  </header>
+  <main class="stage" id="stage"><canvas id="cv" aria-label="俯視旋轉的滑冰者"></canvas></main>
+  <div class="trans">
+    <button type="button" class="btn icon" id="btnStop" title="暫停姿勢（空白鍵）">⏸</button>
+    <span class="hintline" id="spinLab">旋轉中。拉滑桿收臂：沒有外力矩，L 不變，轉速上升。</span>
+  </div>
+  <aside class="panel">
+    <div class="panel-inner">
+      <section class="sec">
+        <h3>角動量守恆</h3>
+        <div class="formula" data-tex="I=I_0+2mr^{2},\quad L=I\omega">I = I₀ + 2mr²，L = Iω</div>
+        <div class="formula" data-tex="K=\dfrac{L^{2}}{2I}">K = L² / (2I)</div>
+        <p class="keyline">收臂時雙手受到的力沿半徑，對轉軸沒有力矩，所以 L 守恆。I 變小，ω 變大。動能變大，多出來的是肌肉把質量拉近時做的功。</p>
+      </section>
+      <section class="sec">
+        <h3>參數</h3>
+        <div class="param">
+          <span class="lab">雙臂距離 r（往左收）</span>
+          <span class="val"><span data-for="r">0.70</span> m</span>
+          <input id="r" type="range" min="0.16" max="0.70" step="0.01" value="0.70" aria-label="雙臂距離">
+        </div>
+        <div class="ends"><span>收回</span><span>伸直</span></div>
+        <div class="param">
+          <span class="lab">單手質量 m</span>
+          <span class="val"><span data-for="m">2.0</span> kg</span>
+          <input id="m" type="range" min="0.5" max="5" step="0.1" value="2" aria-label="單手質量">
+        </div>
+        <div class="param">
+          <span class="lab">軀幹 I₀（不含雙手）</span>
+          <span class="val"><span data-for="I0">0.80</span> kg·m²</span>
+          <input id="I0" type="range" min="0.2" max="3" step="0.05" value="0.8" aria-label="軀幹轉動慣量">
+        </div>
+        <p class="keyline">只移動「雙臂距離」時 L 守恆。改質量或軀幹 I₀ 是換成另一個系統，這裡讓當下的 ω 先不變、L 跟著改。</p>
+      </section>
+      <section class="sec">
+        <h3>此刻</h3>
+        <table class="ro">
+          <tbody>
+            <tr><td>I</td><td id="oI">—</td></tr>
+            <tr><td>ω</td><td id="oW">—</td></tr>
+            <tr><td>L = Iω</td><td id="oL">—</td></tr>
+            <tr><td>K = L²/(2I)</td><td id="oK">—</td></tr>
+            <tr><td>伸直時的 K</td><td id="oK0">—</td></tr>
+            <tr id="rowW"><td>肌肉做的功 ΔK</td><td id="oWork">—</td></tr>
+          </tbody>
+        </table>
+        <ul class="notes"><li id="note"></li></ul>
+      </section>
+      <details class="keys"><summary>快捷鍵</summary>
+        <ul><li><kbd>空白</kbd> 暫停／繼續旋轉</li><li><kbd>P</kbd> 收起參數</li></ul>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="sim-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  const UI = SimUI;
+  const canvas = document.getElementById('cv');
+  const RMAX = 0.70;
+  const state = { r: RMAX, m: 2, I0: 0.8, L: 0, omega: 4, phi: 0, playing: true };
+  let raf = 0, last = 0;
+
+  function Iof(r) { return state.I0 + 2 * state.m * r * r; }
+
+  function syncFromArm() {
+    const I = Iof(state.r);
+    state.omega = state.L / I;
+  }
+  function syncFromOmega() {
+    state.L = Iof(state.r) * state.omega;
+  }
+
+  function model() {
+    const I = Iof(state.r);
+    const Iopen = Iof(RMAX);
+    const K = state.L * state.L / (2 * I);
+    const Kopen = state.L * state.L / (2 * Iopen);
+    return { I: I, Iopen: Iopen, K: K, Kopen: Kopen, W: K - Kopen, omega: state.L / I, L: state.L };
+  }
+
+  function pause() { state.playing = false; cancelAnimationFrame(raf); last = 0; }
+  function play() { state.playing = true; last = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
+  function toggle() { state.playing ? pause() : play(); }
+  function tick(now) {
+    if (!state.playing) return;
+    if (last) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      state.phi += state.omega * dt;
+    }
+    last = now;
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function render() {
+    const p = UI.beginFrame(canvas);
+    if (!p) return;
+    const pal = p.pal;
+    const u = p.u;
+    const md = model();
+    state.omega = md.omega;
+    const cx = p.w * 0.38;
+    const cy = p.h * 0.52;
+    const scale = Math.min(p.w, p.h) * 0.34 / RMAX;
+    const Rbody = 28 * u;
+
+    p.circle(cx, cy, RMAX * scale + 18 * u, { fill: pal.ice, color: pal.grid2, width: 1 });
+    // 手的軌道
+    p.circle(cx, cy, state.r * scale, { color: pal.grid2, width: 1, dash: [4, 4] });
+
+    const c = Math.cos(state.phi), s = Math.sin(state.phi);
+    // 手臂。phi 是俯視的數學角，螢幕 y 向下所以用 -sin
+    function armTip(sign) {
+      return {
+        x: cx + sign * state.r * scale * c,
+        y: cy - sign * state.r * scale * s,
+      };
+    }
+    const left = armTip(1), right = armTip(-1);
+    p.line(cx, cy, left.x, left.y, { color: pal.ink2, width: 4 });
+    p.line(cx, cy, right.x, right.y, { color: pal.ink2, width: 4 });
+    p.circle(left.x, left.y, 11 * u, { fill: pal.b, color: pal.b });
+    p.circle(right.x, right.y, 11 * u, { fill: pal.b, color: pal.b });
+    p.text(left.x, left.y - 16 * u, 'm', { size: 12, color: pal.b, align: 'center', weight: 700 });
+
+    // 身體與面向
+    p.ctx.save();
+    p.ctx.translate(cx, cy);
+    p.ctx.rotate(-state.phi);
+    p.roundRect(-Rbody * 0.7, -Rbody * 0.95, Rbody * 1.4, Rbody * 1.9, 10 * u, { fill: pal.a, color: pal.a });
+    p.circle(0, -Rbody * 1.15, 10 * u, { fill: pal.ink });
+    p.ctx.restore();
+    p.text(cx, cy + 4 * u, '人', { size: 12, color: '#fff', align: 'center', halo: false, weight: 700 });
+
+    // r 標註
+    p.line(cx, cy, cx + state.r * scale, cy, { color: pal.cm, width: 1.3, dash: [3, 3] });
+    const rLab = 'r = ' + UI.fmt(state.r, 2) + ' m';
+    if (state.r < 0.32) p.text(cx + 78 * u, cy + 36 * u, rLab, { size: 13, color: pal.cm, weight: 700 });
+    else p.text(cx + state.r * scale * 0.5, cy + 16 * u, rLab, { size: 12, color: pal.cm, align: 'center', weight: 650 });
+
+    // 出紙面的 L
+    p.circle(cx, cy - Rbody - 36 * u, 13 * u, { color: pal.ok, width: 2 });
+    p.circle(cx, cy - Rbody - 36 * u, 3 * u, { fill: pal.ok });
+    p.text(cx + 20 * u, cy - Rbody - 36 * u, 'L 出紙面，大小不變', { size: 13, color: pal.ok, weight: 700 });
+
+    const boxX = p.w * 0.66;
+    const rows = [
+      ['I', UI.fmt(md.I, 3) + ' kg·m²'],
+      ['ω', UI.fmt(md.omega, 2) + ' rad/s'],
+      ['圈速', UI.fmt(md.omega / (2 * Math.PI), 2) + ' 圈/s'],
+      ['L', UI.fmt(md.L, 3) + ' kg·m²/s'],
+      ['K', UI.fmt(md.K, 2) + ' J'],
+      ['肌肉做功', UI.fmt(md.W, 2) + ' J'],
+    ];
+    const rh = 26 * u;
+    const bh = rows.length * rh + 16 * u;
+    p.ctx.fillStyle = pal.panel;
+    p.ctx.fillRect(boxX, 20 * u, p.w - boxX - 14 * u, bh);
+    p.ctx.strokeStyle = pal.panelLine;
+    p.ctx.strokeRect(boxX + 0.5, 20 * u + 0.5, p.w - boxX - 14 * u - 1, bh - 1);
+    rows.forEach((row, i) => {
+      p.text(boxX + 10 * u, 32 * u + i * rh, row[0], { size: 13, color: pal.ink2, haloColor: pal.panel });
+      p.text(p.w - 24 * u, 32 * u + i * rh, row[1], { size: 14, color: pal.ink, align: 'right', weight: 700, haloColor: pal.panel });
+    });
+
+    const ratio = md.Iopen / md.I;
+    const cap = ratio < 1.05 ? '手臂伸直：這個 L 之下轉得最慢' : '收臂後 ω 是伸直時的 ' + UI.fmt(ratio, 2) + ' 倍';
+    p.text(16 * u, 20 * u, cap, { size: 14, weight: 750, color: pal.ink });
+
+    document.getElementById('oI').textContent = UI.fmt(md.I, 3) + ' kg·m²';
+    document.getElementById('oW').textContent = UI.fmt(md.omega, 3) + ' rad/s';
+    document.getElementById('oL').textContent = UI.fmt(md.L, 3) + ' kg·m²/s';
+    document.getElementById('oK').textContent = UI.fmt(md.K, 3) + ' J';
+    document.getElementById('oK0').textContent = UI.fmt(md.Kopen, 3) + ' J';
+    document.getElementById('oWork').textContent = UI.fmt(md.W, 3) + ' J';
+    document.getElementById('rowW').className = md.W > 0.05 ? 'ok' : '';
+    const note = document.getElementById('note');
+    if (state.r > RMAX - 0.015) {
+      note.className = '';
+      note.textContent = '手臂伸直，作為這一個 L 的基準。往左收，看 ω 和 K 一起上升。';
+    } else if (md.W > 0) {
+      note.className = 'ok';
+      note.textContent = 'I 從 ' + UI.fmt(md.Iopen, 2) + ' 降到 ' + UI.fmt(md.I, 2) + '。L 沒變，K 增加了 ' + UI.fmt(md.W, 2) + ' J，這是肌肉做的正功。把手伸回去會做負功，轉速降下來。';
+    } else {
+      note.className = '';
+      note.textContent = 'L 守恆。';
+    }
+    document.getElementById('btnStop').textContent = state.playing ? '⏸' : '▶';
+    document.getElementById('spinLab').textContent = state.playing
+      ? '旋轉中。拉「雙臂距離」收臂：沒有外力矩，L 不變，轉速上升。'
+      : '已暫停。收臂仍會改 I、ω、K，只是畫面先不轉。';
+  }
+
+  function setR(r) {
+    state.r = r;
+    const slider = document.getElementById('r');
+    slider.value = String(r);
+    document.querySelector('[data-for="r"]').textContent = UI.fmt(r, 2);
+    syncFromArm();
+    render();
+  }
+
+  UI.bindRange('r', (v) => { state.r = v; syncFromArm(); render(); });
+  UI.bindRange('m', (v) => { state.m = v; syncFromOmega(); render(); });
+  UI.bindRange('I0', (v) => { state.I0 = v; syncFromOmega(); render(); });
+
+  document.getElementById('btnIn').addEventListener('click', () => setR(0.16));
+  document.getElementById('btnOut').addEventListener('click', () => setR(RMAX));
+  document.getElementById('btnPush').addEventListener('click', () => {
+    state.omega *= 1.3;
+    syncFromOmega();
+    render();
+  });
+  document.getElementById('btnReset').addEventListener('click', () => {
+    state.r = RMAX; state.m = 2; state.I0 = 0.8; state.omega = 4; state.phi = 0;
+    document.getElementById('m').value = '2';
+    document.querySelector('[data-for="m"]').textContent = '2.0';
+    document.getElementById('I0').value = '0.8';
+    document.querySelector('[data-for="I0"]').textContent = '0.80';
+    syncFromOmega();
+    setR(RMAX);
+  });
+  document.getElementById('btnStop').addEventListener('click', toggle);
+  document.getElementById('btnTheme').addEventListener('click', () => { UI.cycleTheme(); render(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.getAttribute('data-theme')) render(); });
+  UI.wirePanel(document.getElementById('btnPanel'), document.getElementById('app'));
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.key === 'p' || e.key === 'P') document.getElementById('btnPanel').click();
+  });
+
+  function selfCheck() {
+    const errors = [];
+    const saved = { r: state.r, m: state.m, I0: state.I0, L: state.L, omega: state.omega };
+    state.m = 2; state.I0 = 0.8; state.r = RMAX; state.omega = 4;
+    syncFromOmega();
+    const L0 = state.L;
+    const K0 = model().K;
+    state.r = 0.16;
+    syncFromArm();
+    const md = model();
+    if (Math.abs(state.L - L0) > 1e-9) errors.push('L not conserved');
+    if (!(md.omega > 4)) errors.push('omega did not rise');
+    if (Math.abs(md.K - state.L * state.L / (2 * md.I)) > 1e-9) errors.push('K formula');
+    if (!(md.K > K0 + 1)) errors.push('work ' + md.K + ' vs ' + K0);
+    if (Math.abs(md.W - (md.K - K0)) > 1e-6) errors.push('W');
+    const Iexpect = 0.8 + 2 * 2 * 0.16 * 0.16;
+    if (Math.abs(md.I - Iexpect) > 1e-9) errors.push('I ' + md.I);
+    Object.assign(state, saved);
+    syncFromArm();
+    return UI.reportCheck(errors);
+  }
+
+  // 初始：伸直，ω = 4
+  state.omega = 4;
+  syncFromOmega();
+  UI.typeset(document);
+  UI.watchResize(document.getElementById('stage'), canvas, render);
+  const ok = selfCheck();
+  play();
+  window.__sim = {
+    id: 'skater',
+    ready: true,
+    ok: ok,
+    selfCheck: selfCheck,
+    setR: setR,
+    model: model,
+    snapshot: () => model(),
+  };
+})();
+</script>
+</body>
+</html>
