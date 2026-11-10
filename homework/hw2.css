@@ -1,0 +1,135 @@
+/* homework/hw.css — 共用作答樣式，供每週作業頁面使用 */
+:root{
+  --hw-accent:#2563c9;
+  --hw-text:#111;
+  --hw-bg:#fff;
+  --hw-card-border:#ddd;
+  --hw-card-bg:#fafafa;
+  --hw-hint-border:#cfd8e3;
+  --hw-hint-bg:#eef2f7;
+  --hw-input-border:#bbb;
+  --hw-error:#c0392b;
+  --hw-ok:#2e7d32;
+  --hw-muted:#666;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --hw-accent:#7aa8ff;
+    --hw-text:#eee;
+    --hw-bg:#16181c;
+    --hw-card-border:#3a3f47;
+    --hw-card-bg:#1d2024;
+    --hw-hint-border:#3a4a5e;
+    --hw-hint-bg:#1c2730;
+    --hw-input-border:#555c66;
+    --hw-error:#ff6b5b;
+    --hw-ok:#6bd47a;
+    --hw-muted:#aaa;
+  }
+}
+
+body{font:17px/1.6 -apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;max-width:760px;margin:0 auto;padding:16px;color:var(--hw-text);background:var(--hw-bg)}
+a{color:var(--hw-accent)}
+h1{margin-bottom:2px}
+.hw-subtitle{color:var(--hw-muted);margin-top:0}
+.hw-hint{border:1px solid var(--hw-hint-border);border-radius:8px;padding:10px 14px;background:var(--hw-hint-bg);margin:12px 0;font-size:0.95em}
+
+/* 目錄 */
+.hw-toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px;padding:0;list-style:none}
+.hw-toc li{margin:0}
+.hw-toc a{display:inline-block;padding:8px 14px;border:1px solid var(--hw-card-border);border-radius:20px;text-decoration:none;font-size:0.92em}
+
+/* 頂部：姓名 + 自動儲存狀態 */
+.hw-topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid var(--hw-card-border);background:var(--hw-card-bg);border-radius:10px;padding:12px 14px;margin:14px 0}
+.hw-topbar label{font-weight:600;white-space:nowrap}
+#hw-name{flex:1 1 180px;min-width:140px;min-height:44px;font-size:1em;padding:8px 10px;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text)}
+#hw-saved-indicator{font-size:0.85em;color:var(--hw-ok);white-space:nowrap}
+#hw-saved-indicator.hw-warn{color:var(--hw-error)}
+
+.hw-card{border:1px solid var(--hw-card-border);border-radius:10px;padding:16px 20px;margin:20px 0;background:var(--hw-card-bg)}
+.hw-card h3{margin-top:0}
+
+.hw-q{margin:16px 0}
+.hw-prompt{margin-bottom:8px}
+.hw-sub{font-weight:600;margin-top:14px}
+
+/* 選擇題 */
+.hw-options{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.hw-opt{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:11px 14px;border:1px solid var(--hw-input-border);border-radius:10px;background:var(--hw-bg);color:var(--hw-text);cursor:pointer;font-size:1em;text-align:left}
+.hw-opt:focus-visible{outline:2px solid var(--hw-accent)}
+.hw-opt.hw-selected{background:var(--hw-accent);border-color:var(--hw-accent);color:#fff}
+
+/* 數值輸入 */
+.hw-num-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
+.hw-num-input{min-height:44px;font-size:1.05em;padding:8px 12px;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text);width:140px}
+.hw-unit{color:var(--hw-muted)}
+.hw-error{color:var(--hw-error);font-size:0.88em;margin-top:4px;display:none}
+.hw-error.hw-show{display:block}
+
+/* 方向題 */
+.hw-dir-select{min-height:44px;font-size:1em;padding:8px 10px;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text)}
+
+/* 推導／文字 */
+.hw-symbol-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.hw-symbol-btn{min-width:44px;min-height:40px;padding:4px 10px;font-size:1.1em;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text);cursor:pointer}
+.hw-textarea{display:block;width:100%;box-sizing:border-box;min-height:90px;font-size:1em;font-family:"SF Mono",Menlo,Consolas,monospace;padding:10px;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text);resize:vertical}
+.hw-preview{margin-top:8px;padding:10px 12px;border:1px solid var(--hw-card-border);border-radius:8px;background:var(--hw-card-bg);min-height:1.6em;overflow-x:auto}
+.hw-preview .hw-plain-line{margin:2px 0}
+
+/* 照片上傳 */
+.hw-photo-section{margin-top:12px}
+.hw-photo-label{display:inline-block;min-height:44px;padding:10px 16px;border:1px dashed var(--hw-input-border);border-radius:10px;cursor:pointer;font-size:0.95em}
+.hw-photo-input{display:none}
+.hw-photo-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.hw-photo-thumb{position:relative;width:92px;height:92px}
+.hw-photo-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--hw-card-border)}
+.hw-photo-del{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;border:1px solid var(--hw-input-border);background:var(--hw-bg);color:var(--hw-text);cursor:pointer;font-size:0.9em;line-height:1}
+
+/* 小考 */
+#hw-timerbar{position:sticky;top:0;z-index:50;background:var(--hw-accent);color:#fff;text-align:center;font-weight:600;padding:10px;border-radius:0 0 10px 10px;margin:0 -16px 10px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.hw-quiz-status{font-weight:600;margin:10px 0}
+.hw-quiz-body.hw-quiz-locked .hw-opt{pointer-events:none;opacity:0.6}
+.hw-quiz-body.hw-quiz-locked input,
+.hw-quiz-body.hw-quiz-locked textarea,
+.hw-quiz-body.hw-quiz-locked select,
+.hw-quiz-body.hw-quiz-locked button{opacity:0.6}
+
+/* 按鈕 */
+.hw-btn{display:inline-block;min-height:48px;padding:12px 22px;font-size:1.05em;border:none;border-radius:10px;background:var(--hw-accent);color:#fff;cursor:pointer}
+.hw-btn:active{opacity:0.85}
+.hw-btn.hw-btn-secondary{background:var(--hw-card-bg);color:var(--hw-text);border:1px solid var(--hw-input-border)}
+
+/* 送出區 */
+.hw-submit-section{margin:28px 0}
+.hw-submit-result{margin-top:16px}
+#hw-summary-text{width:100%;box-sizing:border-box;min-height:220px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:0.92em;padding:10px;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-card-bg);color:var(--hw-text)}
+.hw-submit-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+
+figure.hw-fig{margin:12px 0;text-align:center}
+figure.hw-fig svg{max-width:100%;height:auto;color:var(--hw-text)}
+
+footer.hw-footer{margin-top:32px;font-size:0.85em;color:var(--hw-muted)}
+
+/* 引導式步驟 */
+.hw-steps{margin:16px 0}
+.hw-step{margin:14px 0;padding:12px 14px;border:1px solid var(--hw-input-border);border-radius:10px}
+.hw-step-title{margin-bottom:8px}
+.hw-step-no{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:999px;background:var(--hw-accent);color:#fff;font-size:0.85em;font-weight:600}
+.hw-step-note{font-size:0.85em;color:var(--hw-muted)}
+.hw-step .hw-q{margin:8px 0 0}
+.hw-sym-input{font-size:1em;font-family:"SF Mono",Menlo,Consolas,monospace;min-height:40px;padding:4px 8px;box-sizing:border-box;border:1px solid var(--hw-input-border);border-radius:8px;background:var(--hw-bg);color:var(--hw-text);max-width:100%}
+.hw-align{display:flex;flex-direction:column;gap:14px;margin:10px 0 0;overflow-x:auto}
+.hw-align-row{display:grid;grid-template-columns:1.5em auto 1fr;align-items:center;gap:8px}
+.hw-align-lhs{min-width:1.5em;text-align:right}
+.hw-align-rhs{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hw-int{display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+.hw-int-sign{font-size:2.2em;line-height:1}
+.hw-int .hw-sym-input{width:5em}
+/* v2 線上繳交 */
+.hw-history{font-size:0.9em;color:var(--hw-muted);margin:10px 0 0 0;padding-left:1.2em}
+.hw-submit-message.hw-warn{color:#b45309}
+.hw-submit-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.hw-mode-note{font-size:0.85em;color:var(--hw-muted)}
+.hw-source{font-size:0.8em;color:var(--hw-muted)}
+.hw-unit-input{width:7em;margin-left:6px}
+.hw-table{border-collapse:collapse;margin:8px 0}.hw-table th,.hw-table td{border:1px solid var(--hw-card-border);padding:4px 10px;text-align:center}

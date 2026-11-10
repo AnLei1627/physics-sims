@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AP Physics C 力學｜11/9 作業</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="hw2.css">
+</head>
+<body>
+
+<h1>AP Physics C 力學｜11/9 作業</h1>
+<p class="hw-subtitle">11/16（一）上課前完成，約 60–80 分鐘（可分兩天寫）</p>
+
+<p>這週練習力矩與轉動版牛頓第二定律：Part A、B 是講義上圈起來和還沒寫完的題，Part C 是兩題新的綜合題。</p>
+
+<div class="hw-hint">
+<strong>寫法要求：</strong>Derive 第一行寫 $\sum\tau=I\alpha$、$\sum F=ma$ 或守恆式；Justify 寫成完整句子；數值答案帶單位。推導題可以直接打字，也可以寫在紙上拍照上傳。
+</div>
+
+<div class="hw-topbar">
+  <label for="hw-name">學生姓名</label>
+  <input type="text" id="hw-name" placeholder="請輸入姓名" autocomplete="off">
+  <label for="hw-code">學生代碼</label>
+  <input type="text" id="hw-code" placeholder="老師給的代碼" autocomplete="off" style="width:8em">
+  <span id="hw-saved-indicator"></span>
+</div>
+<p class="hw-mode-note" style="margin-top:-6px">作答會自動存在這台裝置上，關掉頁面再打開也還在。</p>
+
+<ul class="hw-toc">
+  <li><a href="#partA">Part A</a></li>
+  <li><a href="#partB">Part B</a></li>
+  <li><a href="#partC">Part C 新題</a></li>
+  <li><a href="#hw-submit">送出</a></li>
+</ul>
+
+<h2 id="partA">Part A　講義圈起來的題（約 20 分）</h2>
+
+<div class="hw-card">
+<h3>A1　例題 3 (b)：讓桿子保持靜止</h3>
+<p>（講義 p.3）長 $L$ 的桿在中點用軸固定、水平放置。右端受向下的力 $F_1$；軸左方 $L/4$ 處受向下的力 $F_2$；左端受一個<strong>沿著桿子</strong>向右的力 $F_3$。桿子原本靜止。</p>
+<div class="hw-q" data-qid="A1-1" data-type="mcq">
+  <div class="hw-prompt">(b-1) 要讓桿子<strong>保持靜止、不開始轉</strong>，$F_2$ 必須是：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $\tfrac12F_1$</div>
+    <div data-value="B">(B) $F_1$</div>
+    <div data-value="C">(C) $2F_1$</div>
+    <div data-value="D">(D) $4F_1$</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="A1-2" data-type="derive">
+  <div class="hw-prompt">(b-2) 寫出你的力矩式（第一行寫 $\sum\tau=0$），並用一句話說明：為什麼 $F_3$ 的大小不影響這個答案？</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>A2　例題 3 (c)：$F_3$ 加倍</h3>
+<p>軸固定在牆上、不會移動。</p>
+<div class="hw-q" data-qid="A2-1" data-type="mcq">
+  <div class="hw-prompt">在 (b) 的平衡狀態下，把 $F_3$ 加倍。桿子會：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 開始轉，也開始移動</div>
+    <div data-value="B">(B) 不轉，但整根往右移動</div>
+    <div data-value="C">(C) 不轉，也不移動</div>
+    <div data-value="D">(D) 開始轉，但不移動</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="A2-2" data-type="text">
+  <div class="hw-prompt">Justify：先想清楚桿受的<strong>所有</strong>力，再分別用 $\sum\tau$ 和 $\sum F$ 各寫一句話，說明會不會轉、會不會移動。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>A3　例題 6 (a)：掛重物 vs. 用手拉</h3>
+<p>（講義 p.6）同一個滑輪（轉動慣量 $I$、半徑 $R$，軸無摩擦）。繩子輕、不可伸長、在滑輪上不打滑。情況 A：繩端掛質量 $m$ 的物體，由靜止釋放。情況 B：用手往下拉繩端，拉力<strong>一直保持</strong>大小 $mg$。課堂上已經推出 $\alpha_A$。</p>
+<div class="hw-q" data-qid="A3-1" data-type="derive">
+  <div class="hw-prompt">(a-1) 推導情況 B 的角加速度 $\alpha_B$（用 $m,g,R,I$ 表示）。第一行寫 $\sum\tau=I\alpha$。</div>
+</div>
+<div class="hw-q" data-qid="A3-2" data-type="mcq">
+  <div class="hw-prompt">(a-2) 比較：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $\alpha_A>\alpha_B$</div>
+    <div data-value="B">(B) $\alpha_A=\alpha_B$</div>
+    <div data-value="C">(C) $\alpha_A<\alpha_B$</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="A3-3" data-type="text">
+  <div class="hw-prompt">(a-3) 不用算式，用一兩句話說明為什麼兩者不一樣。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>A4　例題 6 (b)：情況 A 的繩張力</h3>
+<div class="hw-q" data-qid="A4-1" data-type="mcq">
+  <div class="hw-prompt">物體下落時，繩張力 $T$ 和 $mg$ 比：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $T>mg$</div>
+    <div data-value="B">(B) $T=mg$</div>
+    <div data-value="C">(C) $T<mg$</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="A4-2" data-type="text">
+  <div class="hw-prompt">Justify：不用算式，用一句完整的話說明；再說明如果滑輪非常重（$I$ 很大），$T$ 會趨近多少、為什麼。</div>
+</div>
+</div>
+
+<h2 id="partB">Part B　課堂上沒寫完的 (b) 小題（約 10 分）</h2>
+
+<div class="hw-card">
+<h3>B1　Q2 (b)：階梯輪越轉越快</h3>
+<p>（講義 p.7）階梯輪外半徑 $R$、內軸半徑 $R/3$。外緣切向力 $F_1$ 使它朝一個方向轉，內軸切向力 $F_2$ 朝反方向。等角速度時 $F_2=3F_1$。</p>
+<div class="hw-q" data-qid="B1-1" data-type="mcq">
+  <div class="hw-prompt">如果輪子（朝 $F_1$ 的方向）越轉越快，$F_2$ 和 $3F_1$ 比：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $F_2>3F_1$</div>
+    <div data-value="B">(B) $F_2=3F_1$</div>
+    <div data-value="C">(C) $F_2<3F_1$</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="B1-2" data-type="text">
+  <div class="hw-prompt">Justify（一句話，要提到「淨力矩」）。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>B2　Q3 (b)：同樣的力矩、兩倍的轉動慣量</h3>
+<p>輪子 X（$I$）和輪子 Y（$2I$）受同樣的固定淨力矩，從靜止加速到同樣的 $\omega$。</p>
+<div class="hw-q" data-qid="B2-1" data-type="mcq">
+  <div class="hw-prompt">到達 $\omega$ 時，$K_Y/K_X$ =</div>
+  <div class="hw-options">
+    <div data-value="A">(A) $\tfrac12$</div>
+    <div data-value="B">(B) $1$</div>
+    <div data-value="C">(C) $2$</div>
+    <div data-value="D">(D) $4$</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="B2-2" data-type="derive">
+  <div class="hw-prompt">力矩一樣，做的功卻不一樣。用 $W=\tau\,\Delta\theta$ 說明原因（要比較兩者轉過的角度）。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>B3　Q4 (b)：阻力加倍</h3>
+<p>轉動的輪子（$I$、半徑 $r$、角速度 $\omega$），邊緣受一個<strong>大小固定、方向一直沿切線</strong>的阻力 $F$，直到停止。</p>
+<div class="hw-q" data-qid="B3-1" data-type="mcq">
+  <div class="hw-prompt">把 $F$ 加倍。「停下所需的角度」「停下所需的時間」「損失的能量」各怎麼變？</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 損失的能量加倍；停下的時間減半</div>
+    <div data-value="B">(B) 損失的能量不變；停下的角度和時間都減半</div>
+    <div data-value="C">(C) 損失的能量不變；停下的角度不變、時間減半</div>
+    <div data-value="D">(D) 損失的能量減半；停下的角度減半</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="B3-2" data-type="derive">
+  <div class="hw-prompt">寫出停下所需角度 $\Delta\theta$ 的式子（用 $I,\omega,F,r$），並說明為什麼損失的能量與 $F$ 無關。</div>
+</div>
+</div>
+
+<h2 id="partC">Part C　新題（約 35 分）</h2>
+
+<div class="hw-card">
+<h3>C1　剪斷繩子的瞬間：軸怎麼出力？</h3>
+<figure style="margin:8px 0">
+<svg viewBox="0 0 320 130" width="320" height="130" role="img" aria-label="左端為軸、右端掛方塊並用鉛直繩吊成水平的細桿">
+  <rect x="10" y="40" width="14" height="40" fill="none" stroke="currentColor" stroke-dasharray="3,3"/>
+  <circle cx="30" cy="60" r="5" fill="currentColor"/>
+  <rect x="30" y="56" width="240" height="8" fill="none" stroke="currentColor"/>
+  <rect x="262" y="64" width="16" height="16" fill="currentColor" opacity="0.6"/>
+  <line x1="270" y1="56" x2="270" y2="8" stroke="currentColor"/>
+  <line x1="240" y1="8" x2="300" y2="8" stroke="currentColor" stroke-width="3"/>
+  <text x="140" y="95" font-size="13" fill="currentColor">M, L</text>
+  <text x="284" y="80" font-size="13" fill="currentColor">m</text>
+  <text x="276" y="34" font-size="12" fill="currentColor">輕繩</text>
+  <text x="14" y="100" font-size="12" fill="currentColor">軸</text>
+</svg>
+</figure>
+<p>一根質量 $M$、長 $L$ 的均勻細桿，左端套在無摩擦的水平軸上，可以在鉛直面內自由轉動（對端點 $I=\tfrac13ML^2$）。桿的右端牢牢固定一個小方塊（大小可忽略，質量 $m$）。一條鉛直的輕繩綁在桿的右端，把桿吊成水平、保持靜止。</p>
+
+<div class="hw-q" data-qid="C1-a" data-type="derive">
+  <div class="hw-prompt">(a) 剪斷之前：推導繩張力 $T_0$ 與軸對桿的力 $N_0$（寫大小與方向），用 $M,m,g$ 表示。</div>
+</div>
+<div class="hw-q" data-qid="C1-b1" data-type="derive">
+  <div class="hw-prompt">(b-1) 剪斷後的那一瞬間（桿仍水平、$\omega=0$）：推導角加速度 $\alpha$，用 $M,m,L,g$ 表示。</div>
+</div>
+<div class="hw-q" data-qid="C1-b2" data-type="mcq">
+  <div class="hw-prompt">(b-2) 同一瞬間，方塊的加速度大小和 $g$ 比？（只用 (b-1) 的結果判斷）</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 比 $g$ 大</div>
+    <div data-value="B">(B) 剛好等於 $g$</div>
+    <div data-value="C">(C) 比 $g$ 小</div>
+    <div data-value="D">(D) 要看 $m/M$ 才能決定</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="C1-b3" data-type="text">
+  <div class="hw-prompt">(b-3) 方塊受的重力就是 $mg$，為什麼它的加速度可以不是 $g$？用一兩句話說明。</div>
+</div>
+<div class="hw-q" data-qid="C1-c" data-type="derive">
+  <div class="hw-prompt">(c) 同一瞬間：推導軸對桿的力 $N_1$（大小與方向），用 $M,m,g$ 表示。</div>
+</div>
+<div class="hw-q" data-qid="C1-d1" data-type="derive">
+  <div class="hw-prompt">(d-1) 小明說：「桿子才剛要開始動，所以軸的力應該跟剪斷前一樣，$N_1=N_0$。」對任何 $m\ge 0$，比較 $N_1$ 與 $N_0$ 哪個大，並用代數證明。</div>
+</div>
+<div class="hw-q" data-qid="C1-d2" data-type="text">
+  <div class="hw-prompt">(d-2) 用 $\sum F=Ma$ 說明小明錯在哪裡：速度不能瞬間改變，軸的力為什麼可以？</div>
+</div>
+<div class="hw-q" data-qid="C1-e1" data-type="num">
+  <div class="hw-prompt">(e-1) 有一組同學用高速攝影分析，算出剪斷瞬間 $N_1=0.30\,Mg$。求 $m/M$（沒有單位）：</div>
+</div>
+<div class="hw-q" data-qid="C1-e2" data-type="text">
+  <div class="hw-prompt">(e-2) 另一組報告 $N_1=0.20\,Mg$。不用知道他們怎麼量，說明這個結果為什麼一定有問題。</div>
+</div>
+</div>
+
+<div class="hw-card">
+<h3>C2　用滑輪量出轉動慣量與軸的摩擦</h3>
+<p>桌邊架著一個滑輪，半徑 $R=0.060\ \text{m}$，轉動慣量 $I$ 未知。輕繩不可伸長、在滑輪上不打滑，兩端各掛砝碼 $m_1$、$m_2$。滑輪的軸有摩擦：只要輪子在轉，就有一個大小固定、阻礙轉動的摩擦力矩 $\tau_f$（未知）。</p>
+<p>同學讓總質量固定為 $m_1+m_2=1.000\ \text{kg}$（每次從一邊搬一點砝碼到另一邊），每次都讓 $m_2>m_1$，由靜止放手，用感測器量 $m_2$ 下降的加速度 $a$。取 $g=9.8\ \text{m/s}^2$。</p>
+
+<div class="hw-q" data-qid="C2-a" data-type="derive">
+  <div class="hw-prompt">(a) 假設系統會動。對 $m_1$、$m_2$、滑輪各寫運動方程式，推導 $a$（用 $m_1,m_2,I,R,\tau_f,g$ 表示）。</div>
+</div>
+<div class="hw-q" data-qid="C2-b1" data-type="text">
+  <div class="hw-prompt">(b-1) 要畫出一條直線，縱軸、橫軸各應該畫什麼？為什麼實驗要讓 $m_1+m_2$ 保持不變？</div>
+</div>
+<div class="hw-q" data-qid="C2-b2" data-type="mcq">
+  <div class="hw-prompt">(b-2) 如果改成「$m_1$ 不動，只往 $m_2$ 那邊加砝碼」，$a$ 對 $m_2-m_1$ 的圖會：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 仍是直線</div>
+    <div data-value="B">(B) 向上彎（越來越陡）</div>
+    <div data-value="C">(C) 向下彎（越來越平）</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="C2-b3" data-type="text">
+  <div class="hw-prompt">(b-3) 說明 (b-2) 的理由。</div>
+</div>
+
+<p>同學量到的數據：</p>
+<table class="hw-table">
+  <tr><th>$m_2-m_1$ (kg)</th><td>0.050</td><td>0.100</td><td>0.150</td><td>0.200</td><td>0.250</td></tr>
+  <tr><th>$a$ (m/s²)</th><td>0.40</td><td>0.87</td><td>1.31</td><td>1.78</td><td>2.22</td></tr>
+</table>
+
+<div class="hw-q" data-qid="C2-c1" data-type="derive">
+  <div class="hw-prompt">(c-1) 在方格紙上畫出 (b-1) 的圖：軸要寫名稱與單位，描點後畫最佳直線，再拍照上傳。也請在下面打出你算的斜率。</div>
+</div>
+<div class="hw-q" data-qid="C2-c2" data-type="num" data-unit="?">
+  <div class="hw-prompt">(c-2) 用你的直線求滑輪的轉動慣量 $I$（數值＋單位）：</div>
+</div>
+<div class="hw-q" data-qid="C2-c3" data-type="num" data-unit="?">
+  <div class="hw-prompt">(c-3) 用你的直線求軸的摩擦力矩 $\tau_f$（數值＋單位）：</div>
+</div>
+<div class="hw-q" data-qid="C2-c4" data-type="text">
+  <div class="hw-prompt">(c-4) 寫出你怎麼從直線得到 $I$ 和 $\tau_f$（用到斜率、還是截距？）。</div>
+</div>
+<div class="hw-q" data-qid="C2-d1" data-type="mcq">
+  <div class="hw-prompt">(d-1) 把滑輪換成質量、半徑都相同，但質量全部集中在邊緣的細圓環（原本是均勻圓盤），軸的摩擦不變。新直線的<strong>斜率</strong>：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 變大</div>
+    <div data-value="B">(B) 不變</div>
+    <div data-value="C">(C) 變小</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="C2-d2" data-type="mcq">
+  <div class="hw-prompt">(d-2) 新直線的<strong>橫軸截距</strong>：</div>
+  <div class="hw-options">
+    <div data-value="A">(A) 變大</div>
+    <div data-value="B">(B) 不變</div>
+    <div data-value="C">(C) 變小</div>
+  </div>
+</div>
+<div class="hw-q" data-qid="C2-d3" data-type="text">
+  <div class="hw-prompt">(d-3) 兩個答案各附物理上的理由（不能只寫「代公式」）。</div>
+</div>
+</div>
+
+
+<div class="hw-submit-section" id="hw-submit">
+<h2>送出</h2>
+<p class="hw-hint">寫到一半可以按「暫存到雲端」；全部寫完按「正式送出」。照片會一起上傳，<strong>不用另外傳 LINE</strong>。送出後會顯示「老師已收到」和回條編號；之後想修改可以再送，每一版都會保留。</p>
+<div class="hw-submit-row">
+  <button type="button" class="hw-draft-btn hw-btn hw-btn-secondary">☁️ 暫存到雲端</button>
+  <button type="button" class="hw-submit-btn hw-btn">正式送出</button>
+  <button type="button" class="hw-fallback-btn hw-btn hw-btn-secondary">顯示摘要（備用）</button>
+  <span class="hw-mode-note"></span>
+</div>
+<div class="hw-submit-result"></div>
+</div>
+
+<p><a href="../index.html">← 回到首頁</a></p>
+<footer class="hw-footer">題目僅供課程練習使用</footer>
+
+<script>
+window.HW_ID = "2026-11-09";
+// Google Apps Script Web App 的 /exec 網址；部署後再填。空字串：送出後顯示摘要（跟 11/2 版一樣）
+window.HW_SUBMIT_ENDPOINT = "";
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="hw2.js"></script>
+</body>
+</html>
