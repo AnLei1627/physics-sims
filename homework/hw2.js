@@ -638,11 +638,13 @@ function uuid(){
   return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 
+function idCode(){ return String(state.name||'').trim(); }
+
 function buildPayload(kind){
   return {
     hwId: HW_ID,
     name: state.name,
-    code: state.code,
+    code: idCode(),
     kind: kind || "final",          // "final" 正式送出／"draft" 暫存到雲端
     submissionId: uuid(),
     clientTime: new Date().toISOString(),
@@ -685,7 +687,7 @@ function fetchReceipt(submissionId){
     var n = state.history.length + 1;
     return sleep(600).then(function(){ return { ok: true, found: true, version: n, receivedAt: new Date().toISOString(), photoCount: 0 }; });
   }
-  var url = ENDPOINT + "?action=receipt&id=" + encodeURIComponent(submissionId) + "&code=" + encodeURIComponent(state.code);
+  var url = ENDPOINT + "?action=receipt&id=" + encodeURIComponent(submissionId) + "&code=" + encodeURIComponent(idCode());
   // 寫入 Drive 可能要幾秒，最多查 5 次
   var tries = 0;
   function attempt(){
@@ -756,8 +758,8 @@ function enhanceSubmit(){
   }
 
   function send(kind){
-    if (!state.name.trim() || !state.code.trim()){
-      showSubmitMessage(resultBox, "請先在最上面填「姓名」和老師給的「學生代碼」。", true);
+    if (!idCode()){
+      showSubmitMessage(resultBox, "請先在最上面填「姓名」（請填老師指定的名字）。", true);
       return;
     }
     if (kind === "final" && !confirm("確定要正式送出嗎？之後還可以再送，老師會看到每一版。")) return;
